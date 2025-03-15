@@ -1,12 +1,12 @@
 # xls2model.py
 # 1/18/2025 created by Jeff Saucerman
-# Imports XLS in Netflux syntax, creates internal representation of model of LDE model
+# Imports XLS in Netflux syntax, creates internal representation of model of Netflux model
 # This is based roughly on xls2Netflux.m
 import numpy as np
 import pandas as pd
 
-# internal representation of an LDE model
-class LDEModel:
+# internal representation of a Netflux2 model
+class NetfluxModel:
   def __init__(self, modelName, speciesIDs, speciesNames, speciesParams, reactionIDs, reactionRules, reactionParams):
     self.modelName = modelName
     self.speciesIDs = speciesIDs
@@ -17,7 +17,7 @@ class LDEModel:
     self.reactionParams = reactionParams
 
 def createModel(xlsfilename):
-    # creates the LDE model from the spreadsheet in Netflux syntax
+    # creates the NetfluxModel from the spreadsheet in Netflux syntax
 
     # Read the species sheet
     species_df = pd.read_excel(xlsfilename, sheet_name='species') # what about csv?
@@ -36,7 +36,7 @@ def createModel(xlsfilename):
     reactionParams = reactions_df.iloc[1:,3:6] # w, n, and EC50 parameters
     
     modelName = xlsfilename.strip('.xlsx')
-    mymodel= LDEModel(modelName,speciesIDs,speciesNames,speciesParams,reactionIDs,reactionRules,reactionParams)
+    mymodel= NetfluxModel(modelName,speciesIDs,speciesNames,speciesParams,reactionIDs,reactionRules,reactionParams)
     mymodel = createInteractionMatrix(mymodel)
     
     return mymodel
