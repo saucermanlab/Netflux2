@@ -29,7 +29,7 @@
             <a href="/help" target="__blank">Help</a>
             <a href="/about" target="__blank">About</a>
         </div>
-        <div><b>Netflux2.&#945;1</b></div>
+        <div><b>Netflux2_alpha1</b></div>
     </div>
     <div class="container">
         <div class="column">
@@ -46,26 +46,26 @@
             <label id="status">Status: Loading</label>
         </div>
         <div class="column">
-            <!-- WORKING ON THIS SECTION NOW, DOESN'T WORK -->
+            <!-- BUG: parameters load but can't yet be refreshed -->
             <h3>Species Parameters</h3>
-            <label for="speciesIDs">Species:<br></label>
-            <select id="speciesIDs" onchange="loadSpeciesParams()">
-                <!-- speciesIDs are added dynamically here by openmodel() -->
+            <label for="speciesList">Species:<br></label>
+            <select id="speciesList" onchange="getSelectedSpeciesParams()">
+                <!-- speciesList is populated by openmodel() -->
             </select><br>
-            <!-- TODO: load the values for the selected reaction -->
-            <label>Y0:<br> <input type="number" id="y0"></label><br>
-            <label>Ymax:<br> <input type="number" id="ymax"></label><br>
-            <label>tau:<br> <input type="number" id="tau" ></label><br>
+            <!-- load the values for the selected species -->
+            <label>Y0:<br> <input type="number" id="y0" onchange="updateSpeciesParams()"></label><br>
+            <label>Ymax:<br> <input type="number" id="ymax" onchange="updateSpeciesParams()"></label><br>
+            <label>tau:<br> <input type="number" id="tau" onchange="updateSpeciesParams()"></label><br>
             
             <h3>Reaction Parameters</h3>
-            <label for="reactionRules">Reaction:<br></label>
-            <select id="reactionRules" onchange="loadReactionParams()">
-                <!-- TODO: Options will be dynamically added here by openmodel() -->
+            <label for="reactionList">Reaction:<br></label>
+            <select id="reactionList" onchange="getSelectedReactionParams()">
+                <!-- reactionList is populated by openmodel() -->
             </select><br>
-            <!-- TODO: load the values for the selected reaction -->
-            <label>W:<br> <input type="number" id="w"></label><br>
-            <label>EC50:<br> <input type="number" id="ec50"></label><br>
-            <label>n:<br> <input type="number" id="n"></label><br>
+            <!-- load the values for the selected reaction -->
+            <label>W:<br> <input type="number" id="w" onchange="updateReactionParams()"></label><br>
+            <label>EC50:<br> <input type="number" id="ec50" onchange="updateReactionParams()"></label><br>
+            <label>n:<br> <input type="number" id="n" onchange="updateReactionParams()"></label><br>
         </div>
         <div class="columnWide">
             <h3>Plot</h3>
@@ -107,7 +107,7 @@
                 contentType: false,
                 success: function(response) {
                     if (response.variables) {
-                        console.log("loading variable list")
+                        //console.log("loading variable list")
                         let select = document.getElementById("variables");
                         select.innerHTML = ""; // Clear existing options
                         response.variables.forEach(variable => {
@@ -119,28 +119,30 @@
                         });
                     }                  
                     if (response.variables) { 
-                        console.log("loading speciesIDs")
-                        let speciesSelect = document.getElementById("speciesIDs");
+                        //console.log("loading species list")
+                        var speciesSelect = document.getElementById("speciesList");
+                        //console.log("speciesSelect:",speciesSelect)
                         speciesSelect.innerHTML = ""; // Clear existing options
                         response.variables.forEach(variable => {
-                        let option = document.createElement("option");
+                        var option = document.createElement("option");
                         option.value = variable;
                         option.textContent = variable;
                         speciesSelect.appendChild(option);
                      });
                      }               
                     if (response.reactionRules) {
-                        console.log("loading reaction rules")
-                        let reactionSelect = document.getElementById("reactionRules");
+                        //console.log("loading reaction list")
+                        var reactionSelect = document.getElementById("reactionList");
                         reactionSelect.innerHTML = ""; // Clear existing options
                         response.reactionRules.forEach(reaction => {
-                        let option = document.createElement("option");
+                        var option = document.createElement("option");
                         option.value = reaction;
                         option.textContent = reaction;
                         reactionSelect.appendChild(option);
                     });
                     } 
-                    document.getElementById("status").innerText = response.status;
+                    resetparams();
+                    document.getElementById("status").innerText = response.status; // BUG: not updating (need settimeout?)
                     console.log("open model")         
  },
                 
@@ -200,7 +202,7 @@
                     
                     // loading values for selected species into web fields
                     var speciesIDs = response.speciesIDs
-                    var selectedSpecies = document.getElementById("speciesIDs").value
+                    var selectedSpecies = document.getElementById("speciesList").value
                     var pos = speciesIDs.findIndex(function(species) {
                         return species === selectedSpecies;
                     });                            
@@ -210,7 +212,7 @@
                     
                     // loading values for selected reactions into web fields
                     var reactionRules = response.reactionRules
-                    var selectedReaction = document.getElementById("reactionRules").value
+                    var selectedReaction = document.getElementById("reactionList").value
                     var pos = reactionRules.findIndex(function(reaction) {
                         return reaction == selectedReaction;
                     })
@@ -249,6 +251,91 @@
             }   
             return selectedVariables;
         }
+
+        function updateSpeciesParams() {
+            let selectedSpecies = document.getElementById("speciesList").value;
+            let y0 = document.getElementById("y0").value;
+            let ymax = document.getElementById("ymax").value;
+            let tau = document.getElementById("tau").value;
+            $.ajax({
+                url: '/updateSpeciesParams', // calls webappy.py/updateSpeciesParams
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    selectedSpecies: selectedSpecies,
+                    y0: y0,
+                    ymax: ymax,
+                    tau: tau
+                }),
+                success: function(response) {
+                    console.log("Species parameters updated for ", selectedSpecies);
+                },
+                error: function(error) {
+                    console.error("Error updating species parameters:", error);
+                }
+            });
+        }
+
+        function updateReactionParams() { //updates parameters from the form
+            var selectedReaction = document.getElementById("reactionList").value;
+            var w = document.getElementById("w").value;
+            var ec50 = document.getElementById("ec50").value;
+            var n = document.getElementById("n").value;
+            $.ajax({
+                url: '/updateReactionParams', // calls webapp.py/updateReactionParams
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    selectedReaction: selectedReaction,
+                    w: w,
+                    ec50: ec50,
+                    n: n
+                }),
+                success: function(response) {
+                    console.log("Reaction parameters updated for ", selectedReaction);
+                },
+                error: function(error) {
+                    console.error("Error updating reaction parameters:", error);
+                }
+            });
+        }
+
+        function getSelectedSpeciesParams() { // updates form from model
+            var selectedSpecies = document.getElementById("speciesList").value;
+            $.ajax({
+                url: "/getSelectedSpeciesParams", // calls webapp.py/getSelectedSpeciesParams and returns the species parameters
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ selectedSpecies: selectedSpecies }),
+                success: function(response) {
+                    // Assuming response contains y0, ymax, and tau for the selected species
+                    // bug says no value
+                    document.getElementById("y0").value = response.y0;
+                    document.getElementById("ymax").value = response.ymax;
+                    document.getElementById("tau").value = response.tau;
+                    console.log("Species parameters refreshed for ", selectedSpecies);
+                },
+            });
+        }
+
+        function getSelectedReactionParams() { // updates form from model
+            var selectedReaction = document.getElementById("reactionList").value;
+            $.ajax({
+                url: "/getSelectedReactionParams", // calls webapp.py/getSelectedReactionParams and returns the Reaction parameters
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ selectedReaction: selectedReaction }),
+                success: function(response) {
+                    // Assuming response contains w, ec50, and n for the selected Reaction
+                    // bug says no value
+                    document.getElementById("w").value = response.w;
+                    document.getElementById("ec50").value = response.ec50;
+                    document.getElementById("n").value = response.n;
+                    console.log("Reaction parameters refreshed for ", selectedReaction);
+                },
+            });
+        }
+
 
         window.onload = function() {
             console.log("loading webapp")

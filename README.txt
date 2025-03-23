@@ -1,5 +1,5 @@
 Netflux2 development notes
-Updated 3/15/2025
+Updated 3/15/2025, version: alpha1
 by Jeff Saucerman
 
 Netflux2 requires installation of:
@@ -24,13 +24,43 @@ model2PythonODE.py
         nestedOR nests reactions for OR gates
         returnUtilityFunctions contains the code for act/inhib/AND/OR
 webapp.py 
-    Loads exampleNet, can run simulation, replot
+    Web interface similar to the original Netflux
+    Currently it loads exampleNet, can run complex simulations, replot
+    openmodel() opens file dialog, creates NetfluxModel, reactionParams, speciesParams, speciesIDs, reactionRules
+    simulate() loads the ODEfunc, params, runs either new or continued simulations
+    create_plot() takes the selected variables, t, and y and makes a plot
+    replot() runs create_plot() again (needed?)
+    resetparams() runs when you click Reset Parameters, resets speciesParams and reactionParams
+    resetsim() runs when you click Reset Simulation, resets t and y
+    updateSpeciesParams() runs when you change a species parameter value, updates speciesParams
+    updateReactionParams() runs when you change a reaction parameter value, updates reactionParams
+    getSelectedSpeciesParams() runs when you select a different species, updates fields for y0/ymax/tau 
+    getSelectedReactionParams() runs when you select a different reaction, updates fields for w/ec50/n
+index.html
+    style parameters
+    navbar, including toggleMenu(): openmodel(), help(), about()
+    time span field
+    multiple select "variables": selects which variable will be plotted in openmodel()
+    simulate/replot/resetparams/resetsim buttons -> simulate()/replot()/resetparams()/resetsims() functions
+    status label
+    species parameter select: changing this calls getSelectedSpeciesParams()
+    species parameter fields y0, ymax, tau. updating calls updateSpeciesParams() 
+    reaction parameter select: changing this calls getSelectedReactionParams()
+    reaction parameter fields w, ec50, n. updating calls updateReactionParams()
        
 To do: 
-Fix reset parameters
-Fix reset simulation
-load parameters into fields
-update parameters from fields
+Some bugs regarding updating parameters in complex simulations.
+Bug in updated status message- shows reset parameters but not simulation completed
+Testing with other network models
+Model exporting through webapp
 
+Flask programming tips:
+- Copilot very helpful
+- passing numpy arrays to the web causes an internal server error, hard to debug
+- convert numpy arrays to lists with .tolist()
+- Spyder can't debug Flask, so I use lots of print statements:
+print(f"DEBUG/updateReactionParams: updated reaction: {selectedReaction}, w: {w}, ec50: {ec50}, n: {n}")
+- session variables with session
+- server-side session variables with flask_session
+- Flask g for "thread global" variables- used for ODEfunc handle
 
-Current notes:

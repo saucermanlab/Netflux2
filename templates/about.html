@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lorenz Simulator - About</title>
+    <title>Netflux2 - About</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; }
@@ -21,27 +21,28 @@
     <div class="navbar">
         <div class="menu" onclick="toggleMenu()">☰</div>
         <div class="menu-options" id="menu-options">
-            <a href="/">Lorenz</a>
+            <a href="/">Netflux2_alpha1</a>
             <a href="/help">Help</a>
         </div>
-        <div><b>Lorenz</b></div>
+        <div><b>Netflux2_alpha1</b></div>
     </div>
 
 
-<h1>About Lorenz</h1><br>
-This Lorenz web app allows for interactive simulation of the Lorenz system.
-The Lorenz system was developed by Edward Lorenz, initially as a model of the atmosphere.
-Lorenz discovered that this system has chaotic behavior, which gave rise to the concept of the 
-"butterfly effect", asking "Does the flap of a butterfly's wings in Brazil set off a tornado in Texas?"
-<a href="https://en.wikipedia.org/wiki/Butterfly_effect">link</a>  <br><br>
+<h1>About Netflux2</h1><br>
+Version alpha1 (3/23/2025), under development<br><br>
 
-For more information about the Lorenz equations, see:
-<a href="https://en.wikipedia.org/wiki/Lorenz_system">Lorenz system (Wikipedia)</a><br><br>
+Netflux2 is a user-friendly tool for simulating biological networks. The best way to get started with Netflux is using the tutorial. 
+The tutorial is accepted at PLOS Computational Biology and the preprint is here: 
+<a href="https://www.biorxiv.org/content/10.1101/2024.01.11.575227v2">bioRxiv</a><br><br>
 
-This Lorenz web app was developed by Jeff Saucerman using Python and Flask. <br><br>
+Netflux simulates networks using a modeling approach called logic-based differential equations, described here: 
+Kraeutler MJ, Soltis AR, Saucerman JJ. Modeling cardiac β-adrenergic signaling with normalized-Hill differential equations: comparison with a biochemical model. BMC Syst Biol. 2010 Nov 18;4:157. <a href="https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-4-157">link (open access)</a><br><br>
 
-The source code is available on <a href="https://github.com/saucermanlab/webapps">GitHub</a> under an MIT open source license.
+Netflux2_alpha1 is under development and will contain bugs. We'd love to hear of bug reports or ideas for additional features.
+The source code is available on <a href="https://github.com/saucermanlab/Netflux2">GitHub</a> under an MIT open source license.<br><br>
 
+The previous version Netflux (v1) currently is better tested and has more features. It is based in MATLAB and also has a Windows installer for those without MATLAB. 
+The source code is available on <a href="https://github.com/saucermanlab/Netflux">GitHub</a> under an MIT open source license.
 
     <script>
         function toggleMenu() {
