@@ -2,6 +2,10 @@
 # 1/18/2025 created by Jeff Saucerman
 # Imports XLS in Netflux syntax, creates internal representation of model of Netflux model
 # This is based roughly on xls2Netflux.m
+#
+# A NetfluxModel has attributes: modelName, speciesIDs, speciesNames, reactionIDs, reactionRules, reactionParams, interactionMatrix, notMatrix
+# speciesParameters contains: Y0, Ymax, tau parameters
+# reactionParameters contains: w, n, and EC50 parameters
 import numpy as np
 import pandas as pd
 

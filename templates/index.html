@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="max-age=3600, must-revalidate">
+    <title>Netflux2</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .navbar { background-color: black; color: white; padding: 8px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; position: relative}
+        .menu { cursor: pointer; }
+        .menu-options { display: none; position: absolute; background: white; color: black; top: 40px; left: 10px; padding: 10px; border: 1px solid black; }
+        .menu-options a { display: block; text-decoration: none; color: black; padding: 5px; }
+        .container { display: flex; }
+        .column { flex: 1; padding: 20px; background-color: #f4f4f4 }
+        .columnWide { flex: 2; padding: 20px; background-color: #f4f4f4 }
+        button { margin: 5px 0; padding: 5px 10px; width: 150px; border: none; background-color: #007BFF; color: white; cursor: pointer; }
+        label { width: 142px }
+        input {width: 142px}
+        select { width: 150px }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="menu" onclick="toggleMenu()">☰</div>
+        <div class="menu-options" id="menu-options">
+            <a href="#" onclick="triggerFileInput();">Open Model</a>
+            <a href="/help" target="__blank">Help</a>
+            <a href="/about" target="__blank">About</a>
+        </div>
+        <div><b>Netflux2.&#945;1</b></div>
+    </div>
+    <div class="container">
+        <div class="column">
+            <h3>Simulation Settings</h3>
+            <label>Time Span:<br> <input type="number" id="tmax" value=10></label><br>
+            <label for="variables">Variables to Plot:<br></label>
+            <select id="variables" multiple>
+                <!-- Options will be dynamically added here by openmodel() -->
+            </select><br><br>
+            <button onclick="simulate()" style="background-color: red; color: white;">Simulate</button><br>
+            <button onclick="replot()">Plot</button><br>
+            <button onclick="resetparams()">Reset Parameters</button><br>
+            <button onclick="resetsim()">Reset Simulation</button><br>
+            <label id="status">Status: Loading</label>
+        </div>
+        <div class="column">
+            <!-- WORKING ON THIS SECTION NOW, DOESN'T WORK -->
+            <h3>Species Parameters</h3>
+            <label for="speciesIDs">Species:<br></label>
+            <select id="speciesIDs" onchange="loadSpeciesParams()">
+                <!-- speciesIDs are added dynamically here by openmodel() -->
+            </select><br>
+            <!-- TODO: load the values for the selected reaction -->
+            <label>Y0:<br> <input type="number" id="y0"></label><br>
+            <label>Ymax:<br> <input type="number" id="ymax"></label><br>
+            <label>tau:<br> <input type="number" id="tau" ></label><br>
+            
+            <h3>Reaction Parameters</h3>
+            <label for="reactionRules">Reaction:<br></label>
+            <select id="reactionRules" onchange="loadReactionParams()">
+                <!-- TODO: Options will be dynamically added here by openmodel() -->
+            </select><br>
+            <!-- TODO: load the values for the selected reaction -->
+            <label>W:<br> <input type="number" id="w"></label><br>
+            <label>EC50:<br> <input type="number" id="ec50"></label><br>
+            <label>n:<br> <input type="number" id="n"></label><br>
+        </div>
+        <div class="columnWide">
+            <h3>Plot</h3>
+            <img id="plot" src="" alt="Simulation Plot" style="width:100%;">
+        </div>
+    </div>
+    
+    <form style="display:none;">
+        <input type="file" name="file" id="fileInput" onchange="openmodel();">
+    </form>
+    
+    <script>
+        function toggleMenu() {
+            let menu = document.getElementById("menu-options");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+        
+        function triggerFileInput() {
+            document.getElementById("fileInput").click();
+            toggleMenu()
+        }
+            
+        function openmodel() {
+            let formData = new FormData();
+            let fileInput = document.getElementById("fileInput");
+            
+            if (fileInput.files.length === 0) {
+                alert("Please select a file first.");
+                return;
+            }
+    
+            formData.append("file", fileInput.files[0]);
+    
+            $.ajax({
+                url: "/openmodel",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.variables) {
+                        console.log("loading variable list")
+                        let select = document.getElementById("variables");
+                        select.innerHTML = ""; // Clear existing options
+                        response.variables.forEach(variable => {
+                        let option = document.createElement("option");
+                        option.value = variable;
+                        option.textContent = variable;
+                        option.selected = true;
+                        select.appendChild(option);
+                        });
+                    }                  
+                    if (response.variables) { 
+                        console.log("loading speciesIDs")
+                        let speciesSelect = document.getElementById("speciesIDs");
+                        speciesSelect.innerHTML = ""; // Clear existing options
+                        response.variables.forEach(variable => {
+                        let option = document.createElement("option");
+                        option.value = variable;
+                        option.textContent = variable;
+                        speciesSelect.appendChild(option);
+                     });
+                     }               
+                    if (response.reactionRules) {
+                        console.log("loading reaction rules")
+                        let reactionSelect = document.getElementById("reactionRules");
+                        reactionSelect.innerHTML = ""; // Clear existing options
+                        response.reactionRules.forEach(reaction => {
+                        let option = document.createElement("option");
+                        option.value = reaction;
+                        option.textContent = reaction;
+                        reactionSelect.appendChild(option);
+                    });
+                    } 
+                    document.getElementById("status").innerText = response.status;
+                    console.log("open model")         
+ },
+                
+                error: function(error) {
+                    console.error("Error opening model:", error);
+                }
+            });
+        }
+          
+        function simulate() {
+            let data = {
+                tmax: document.getElementById("tmax").value,
+                selectedVariables: getSelectedVariables()
+                };
+            
+            $.ajax({
+                url: "/simulate",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function(response) {
+                    document.getElementById("status").innerText = response.status;
+                    if (response.plot) {
+                        document.getElementById("plot").src = "data:image/png;base64," + response.plot;
+                    }
+                    console.log("simulate")
+                }
+            });
+        }
+        
+        function replot() {
+            let data = {
+                selectedVariables: getSelectedVariables()
+            };
+            $.ajax({
+                url: "/replot",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function(response) {
+                    document.getElementById("status").innerText = response.status;
+                    if (response.plot) {
+                        document.getElementById("plot").src = "data:image/png;base64," + response.plot;
+                    }
+                    console.log("replot")
+                }
+            });
+        }
+
+        function resetparams() {
+            $.ajax({
+                url: "/resetparams",
+                type: "POST",
+                contentType: "application/json",
+                success: function(response) { // returns all species and reaction params as lists
+                    document.getElementById("status").innerText = response.status;
+                    
+                    // loading values for selected species into web fields
+                    var speciesIDs = response.speciesIDs
+                    var selectedSpecies = document.getElementById("speciesIDs").value
+                    var pos = speciesIDs.findIndex(function(species) {
+                        return species === selectedSpecies;
+                    });                            
+                    document.getElementById("y0").value = response.y0[pos]
+                    document.getElementById("ymax").value = response.ymax[pos]
+                    document.getElementById("tau").value = response.tau[pos]
+                    
+                    // loading values for selected reactions into web fields
+                    var reactionRules = response.reactionRules
+                    var selectedReaction = document.getElementById("reactionRules").value
+                    var pos = reactionRules.findIndex(function(reaction) {
+                        return reaction == selectedReaction;
+                    })
+                    document.getElementById("w").value = response.w[pos]
+                    document.getElementById("ec50").value = response.ec50[pos]
+                    document.getElementById("n").value = response.n[pos]
+                    
+                    console.log("reset params")
+                },
+                error: function(error) {
+                    console.error("Error resetting parameters:", error);
+                }
+            });
+        }
+        
+        function resetsim() {
+            $.ajax({
+                url: "/resetsim",
+                type: "POST",
+                contentType: "application/json",
+                success: function(response) {
+                    document.getElementById("status").innerText = response.status;
+                    document.getElementById("tmax").value = response.tmax; // FIXME: needed here or remove?
+                    console.log("reset simulation")
+                }
+            });
+        }
+
+        function getSelectedVariables() {
+            let select = document.getElementById("variables");
+            let selectedVariables = [];        
+            for (let option of select.options) {
+                if (option.selected) {
+                    selectedVariables.push(option.value);
+                }
+            }   
+            return selectedVariables;
+        }
+
+        window.onload = function() {
+            console.log("loading webapp")
+            document.getElementById("status").innerText = "Status: Open a model";
+        };
+
+    </script>
+</body>
+</html>

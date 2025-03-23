@@ -2,6 +2,10 @@ Netflux2 development notes
 Updated 3/15/2025
 by Jeff Saucerman
 
+Netflux2 requires installation of:
+flask, flask-session >=0.6, numpy, matplotlib, scipy
+Install flask-session with: conda install conda-forge::flask-session to get v0.6
+
 exampleNet.xls: example Netflux model
 exampleNet_test.py: shows how to load Netflux model, run in write or interactive mode
 xls2model.py
@@ -19,7 +23,14 @@ model2PythonODE.py
         getReactionString(model,speciesID) creates reaction strings for ODE file
         nestedOR nests reactions for OR gates
         returnUtilityFunctions contains the code for act/inhib/AND/OR
+webapp.py 
+    Loads exampleNet, can run simulation, replot
        
 To do: 
-Prototype Netflux webapp
-Refactoring to be me more object oriented.
+Fix reset parameters
+Fix reset simulation
+load parameters into fields
+update parameters from fields
+
+
+Current notes:

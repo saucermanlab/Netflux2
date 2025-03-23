@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lorenz Simulator - About</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .navbar { background-color: black; color: white; padding: 8px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; position: relative}
+        .menu { cursor: pointer; }
+        .menu-options { display: none; position: absolute; background: white; color: black; top: 40px; left: 10px; padding: 10px; border: 1px solid black; }
+        .menu-options a { display: block; text-decoration: none; color: black; padding: 5px; }
+        .container { display: flex; }
+        .column { flex: 1; padding: 20px; background-color: #f4f4f4 }
+        .columnWide { flex: 2; padding: 20px; background-color: #f4f4f4 }
+        button { margin: 5px 0; padding: 5px 10px; width: 100px; border: none; background-color: #007BFF; color: white; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="menu" onclick="toggleMenu()">☰</div>
+        <div class="menu-options" id="menu-options">
+            <a href="/">Lorenz</a>
+            <a href="/about">About</a>
+        </div>
+        <div><b>Lorenz</b></div>
+    </div>
+
+<h1>Help</h1><br>
+Documentation not yet available.<br><br>
+
+Please email Jeff Saucerman at jsaucerman@virginia.edu if you find bugs or have suggestions.
+
+    <script>
+        function toggleMenu() {
+            let menu = document.getElementById("menu-options");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+    </script>
+
+</body>
+</html>
