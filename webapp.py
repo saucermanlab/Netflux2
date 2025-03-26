@@ -6,10 +6,10 @@
 #
 # Current issues:
 # Some bugs with status field.
+# 3/25 fixed bugs with parameter order
 #
 # To do:
 # Need to test with more models and conditions.
-
 
 from flask import Flask, render_template, request, jsonify, session, g
 from flask_session import Session # server-side sessions
@@ -19,11 +19,13 @@ from scipy.integrate import solve_ivp
 import io, os, base64
 import xls2model, model2PythonODE
 
+os.chdir('./myapp')
 app = Flask(__name__)
 app.secret_key = 'NetfluxNetfluxNetflux'       # for session variables
 app.config['SESSION_TYPE'] = 'filesystem'   # server-side sessions
 app.config['SESSION_FILE_DIR'] = './flask_sessions'
 app.config['UPLOAD_FOLDER'] = './uploads'
+
 Session(app)                                # server-side sessions
 
 @app.route('/')
@@ -41,26 +43,36 @@ def openmodel():
         return jsonify({"status": "Error: No file selected"}), 400
 
     if file:
-        filename = file.filename
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        print(f"{filename} uploaded")
-
-        # Generate model and parameters
-        mymodel = xls2model.createModel(filepath)
-        ODEfuncText = model2PythonODE.generateODEfile(mymodel)
-        session.clear()
-        session['NetfluxModel'] = mymodel
-        session['reactionParams'] = mymodel.reactionParams
-        session['speciesParams'] = mymodel.speciesParams
-        session['ODEfuncText'] = ODEfuncText
-        speciesIDs = mymodel.speciesIDs.tolist()  
-        reactionRules = mymodel.reactionRules.tolist()
-        session['speciesIDs'] = speciesIDs
-        session['reactionRules'] = reactionRules
-        #print(f"DEBUG/openmodel: speciesIDs:{speciesIDs}")
-        print(f"DEBUG/openmodel: reactionRules: {reactionRules}")
-        return jsonify({"status": "Status: Model opened", "variables": speciesIDs, "reactionRules": reactionRules})
+        try:
+            filename = file.filename
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            #filepath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], filename)) # BUGFIX JS 3/25 use absolute path instead of relative path
+            file.save(filepath)
+            print(f"{filename} uploaded")
+    
+            # Generate model and parameters
+            mymodel = xls2model.createModel(filepath)
+            print(f"DEBUG/openmodel: mymodel: {mymodel}")
+            ODEfuncText = model2PythonODE.generateODEfile(mymodel)
+            #print(f"DEBUG/openmodel: ODEfuncText: {ODEfuncText}")
+            session.clear()
+            session['NetfluxModel'] = mymodel
+            session['reactionParams'] = mymodel.reactionParams
+            session['speciesParams'] = mymodel.speciesParams
+            #print(f"DEBUG/openmodel: speciesParams:{mymodel.speciesParams}")
+            #print(f"DEBUG/openmodel: reactionParams: {mymodel.reactionParams}")
+            session['ODEfuncText'] = ODEfuncText
+            
+            speciesIDs = mymodel.speciesIDs.tolist()  
+            reactionRules = mymodel.reactionRules.tolist()
+            session['speciesIDs'] = speciesIDs
+            session['reactionRules'] = reactionRules
+            #print(f"DEBUG/openmodel: speciesIDs:{speciesIDs}")
+            #print(f"DEBUG/openmodel: reactionRules: {reactionRules}")
+            return jsonify({"status": "Status: Model opened", "variables": speciesIDs, "reactionRules": reactionRules})
+        except Exception as e:
+            print(f"DEBUG/openmodel: Exception: {e}")
+            return jsonify({'status': f'Status: Error opening model: {str(e)}'})
     
     return jsonify({"status": "Error processing file"}), 500
 
@@ -85,7 +97,7 @@ def simulate():     # runs when you hit Simulate button
         reactionParams = np.array(session.get('reactionParams', []))
         y0, ymax, tau = speciesParams[:, 0], speciesParams[:, 1], speciesParams[:, 2]
         w, n, EC50 = reactionParams[:, 0], reactionParams[:, 1], reactionParams[:, 2]
-        print("fDEBUG/simulate: parameters loaded")
+        #print("fDEBUG/simulate: parameters loaded")
 
         # load ODEfunc using Flask g variable
         local_namespace = {}
@@ -154,26 +166,27 @@ def replot():     # runs when you click Plot button
         plot_url = create_plot()
         return jsonify({'status': 'Status: Plot updated', 'plot': plot_url}) 
     except Exception as e:
-        #print(f"DEBUG: simulate Exception: {e}")
+        print(f"DEBUG: simulate Exception: {e}")
         return jsonify({'status': f'Status: Error: {str(e)}'})
 
 @app.route('/resetparams', methods=['POST'])
 def resetparams():  # runs when you click Reset Parameters
     print("DEBUG: starting resetparams()")
-    mymodel = session.get('NetfluxModel')
+    mymodel = session.get('NetfluxModel',[])
     speciesIDs = mymodel.speciesIDs.tolist()
     reactionRules = mymodel.reactionRules.tolist()
     speciesParams = np.array(mymodel.speciesParams)
     reactionParams = np.array(mymodel.reactionParams)
+    #print(f"DEBUG/resetparams: reaectionParams:{reactionParams}")
     y0, ymax, tau = speciesParams[:, 0].tolist(), speciesParams[:, 1].tolist(), speciesParams[:, 2].tolist()
-    w, ec50, n = reactionParams[:, 0].tolist(), reactionParams[:, 1].tolist(), reactionParams[:, 2].tolist()  
+    w, n, ec50 = reactionParams[:, 0].tolist(), reactionParams[:, 1].tolist(), reactionParams[:, 2].tolist()  
     session['y0'], session['ymax'], session['tau'] = y0, ymax, tau
-    session['w'], session['ec50'], session['n'] = w, ec50, n
+    session['w'], session['n'], session['EC50'] = w, n, ec50
     #print(f"DEBUG: y0:{y0} ymax:{ymax} tau:{tau}")
-    #print(f"DEBUG: w:{w} ec50:{ec50} n:{n}")    
+    #print(f"DEBUG: w:{w} n:{n}, ec50:{ec50} ")    
     return jsonify({'status': 'Status: Parameters reset', 'speciesIDs':speciesIDs, \
                     'reactionRules':reactionRules, 'y0':y0, 'ymax':ymax, 'tau':tau, \
-                    'w':w, 'ec50':ec50,'n':n})
+                    'w':w, 'n':n, 'ec50':ec50})
 
 @app.route('/resetsim', methods=['POST'])
 def resetsim():  # runs when you click Reset Simulation
@@ -185,7 +198,7 @@ def resetsim():  # runs when you click Reset Simulation
 
 @app.route('/updateSpeciesParams', methods=['GET','POST'])
 def updateSpeciesParams():  # when you change a parameter value, this saves it into speciesParams
-    print("DEBUG: starting updateSpeciesParams()")
+    #print("DEBUG: starting updateSpeciesParams()")
     data = request.get_json()
     selectedSpecies, y0, ymax, tau = data['selectedSpecies'], float(data['y0']), float(data['ymax']), float(data['tau'])
     speciesIDs = session.get('speciesIDs',[])
@@ -202,24 +215,24 @@ def updateSpeciesParams():  # when you change a parameter value, this saves it i
 
 @app.route('/updateReactionParams', methods=['GET','POST'])
 def updateReactionParams(): # when you change a parameter value, this saves it into reactionParams
-    print("DEBUG: starting updateReactionParams()")
+    #print("DEBUG: starting updateReactionParams()")
     data = request.get_json()
-    selectedReaction, w, ec50, n = data['selectedReaction'], float(data['w']), float(data['ec50']), float(data['n'])
+    selectedReaction, w, n, ec50 = data['selectedReaction'], float(data['w']), float(data['n']), float(data['ec50']), 
     reactionRules = session.get('reactionRules',[])
     reactionParams = np.array(session.get('reactionParams',[]))
     #print(f"DEBUG/updateReactionParams: reactionParams: {reactionParams}")
     pos = reactionRules.index(selectedReaction)
     reactionParams[pos,0] = w
-    reactionParams[pos,1] = ec50
-    reactionParams[pos,2] = n
+    reactionParams[pos,1] = n
+    reactionParams[pos,2] = ec50
     session['reactionParams'] = reactionParams
-    print(f"DEBUG/updateReactionParams: updated reaction: {selectedReaction}, w: {w}, ec50: {ec50}, n: {n}")
+    print(f"DEBUG/updateReactionParams: updated reaction: {selectedReaction}, w: {w}, n: {n}, ec50: {ec50}")
     print("DEBUG: finished updateReactionParams()")
     return jsonify({'status': 'Status: Updated species parameters'})
 
 @app.route('/getSelectedSpeciesParams', methods=['POST'])
 def getSelectedSpeciesParams(): # when you change which parameter is selected, this reloads the parameter values into the fields
-    print("DEBUG: starting getSelectedSpeciesParams")
+    #print("DEBUG: starting getSelectedSpeciesParams")
     data = request.get_json()
     selectedSpecies = data['selectedSpecies']
     speciesIDs = session.get('speciesIDs',[])
@@ -233,17 +246,17 @@ def getSelectedSpeciesParams(): # when you change which parameter is selected, t
 
 @app.route('/getSelectedReactionParams', methods=['POST'])
 def getSelectedReactionParams(): # when you change which parameter is selected, this reloads the parameter values into the fields
-    print("DEBUG: starting getSelectedReactionParams")
+    #print("DEBUG: starting getSelectedReactionParams")
     data = request.get_json()
     selectedReaction = data['selectedReaction']
     reactionRules = session.get('reactionRules',[])
     reactionParams = np.array(session.get('reactionParams',[]))
     pos = reactionRules.index(selectedReaction)
-    print(f"DEBUG/getSelectedReactionParams: reactionParams: {reactionParams}")
-    print(f"DEBUG/getSelectedReactionParams: pos:{pos}")
-    w, ec50, n = reactionParams[pos,0], reactionParams[pos,1], reactionParams[pos,2] 
-    print(f"DEBUG/getSelectedReactionParams w:{w}, ec50:{ec50}, n:{n}")
-    return jsonify({'status': 'Status: Updated reaction parameters', 'w':w, 'ec50':ec50, 'n':n})
+    #print(f"DEBUG/getSelectedReactionParams: reactionParams: {reactionParams}")
+    #print(f"DEBUG/getSelectedReactionParams: pos:{pos}")
+    w, n, ec50 = reactionParams[pos,0], reactionParams[pos,1], reactionParams[pos,2] 
+    #print(f"DEBUG/getSelectedReactionParams w:{w}, n:{n}, ec50:{ec50}")
+    return jsonify({'status': 'Status: Updated reaction parameters', 'w':w, 'n':n, 'ec50':ec50})
 
 # So that it will run in Spyder
 if __name__ == "__main__":

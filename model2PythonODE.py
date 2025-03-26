@@ -1,9 +1,13 @@
 # model2PythonODE.py
 # by Jeff Saucerman
+# 3/25/2025 JS: fixed bug about scalar power in act(), set x<0 to 0
+# 3/24/2025 JS: fixed bug for multiple AND reactions in rcnStringList
 # 3/15/2025 JS: modified to use io.StringIO instead of file.write
 # 1/20/2025 JS: ported from MATLAB versions
 # replicates features of exportPythonODE.m and Netflux2PythonODE.m
-# STATUS: switching to ioString
+# STATUS: 
+# BUG: <string>:201: RuntimeWarning: invalid value encountered in scalar power
+#   This seems to do with the powers in the act function- potential bug.
 
 import numpy as np
 import datetime
@@ -85,16 +89,17 @@ def generateRunFile(model):
     output.write("import numpy as np\n")
     output.write("from scipy.integrate import solve_ivp\n")
     output.write("import matplotlib.pyplot as plt\n")
-    output.write(f"import {model.modelName}\n")
+    output.write(f"import {model.modelName}_ODEs\n")
     output.write(f"import {model.modelName}_params\n\n")
     output.write(f"speciesNames, y0, ymax, tau, w, n, EC50 = {model.modelName}_params.loadParams()\n\n")        
     output.write("# Run single simulation\n")
     output.write("tspan = [0, 10]\n")
-    output.write(f"solution = solve_ivp({model.modelName}.ODEfunc, tspan, y0, args=(ymax, tau, w, n, EC50))\n\n")
+    output.write(f"solution = solve_ivp({model.modelName}_ODEs.ODEfunc, tspan, y0, rtol=1e-8, args=(ymax, tau, w, n, EC50))\n\n")
     output.write("fig, ax = plt.subplots()\n")
     output.write("ax.plot(solution.t,solution.y.T)\n")
     output.write("ax.set(xlabel='Time',ylabel='Normalized activity')\n")
-    output.write("ax.legend(speciesNames)")
+    output.write("ax.legend(speciesNames)\n")
+    output.write("plt.show()")
     return output.getvalue() # returns runFileText
 
 def generateODEfile(model):
@@ -116,25 +121,30 @@ def generateODEfile(model):
 
     output.write("\n    # logic-based differential equaations\n")
     output.write(f"    dydt = np.zeros({i+1})\n")      
-    for i, speciesID in enumerate(model.speciesIDs):
-        rcnString = getReactionString(model,i) # TODO TEMP; working on getReactionString, might also need to modify ymax??
+    for speciesNum, speciesID in enumerate(model.speciesIDs):
+        # print(f"DEBUG/model2PythonODE/generateODEfile: speciesNum:{speciesNum}, speciesID:{speciesID}")
+        rcnString = getReactionString(model,speciesNum) # potential BUG: might also need to modify ymax for AND gates?
+        #print(f"DEBUG/model2PythonODE: rcnString:{rcnString}")
         output.write(f"    dydt[{speciesID}] = ({rcnString}*ymax[{speciesID}] - y[{speciesID}])/tau[{speciesID}]\n")
     output.write("\n    return dydt\n")
     output.write(returnUtilityFunctions()) # writes the AND/OR/fact/finhib functions
     return output.getvalue() # returns ODEfuncText
 
-def getReactionString(model,speciesID):
-    # generates strings for the reactions for which speciesID is a product
+def getReactionString(model,speciesNum):
+    # generates strings for the reactions for which speciesNum is a product
     # utility function for writeODEfile
+    #print(f"DEBUG/getReactionString: speciesID:{model.speciesIDs[speciesNum+1]}")
 
-    # find reactions where speciesID is a product
+    # find reactions where speciesNum is a product
     intMat = model.interactionMatrix
     notMat = model.notMatrix
-    rcnsWhereSpeciesIsProduct = np.where(intMat[speciesID, :] == 1)[0].tolist()
+    rcnsWhereSpeciesIsProduct = np.where(intMat[speciesNum, :] == 1)[0].tolist()
+    #print(f"DEBUG/getReactionString: speciesID:{model.speciesIDs[speciesNum+1]}, rcnsWhereSpeciesIsProduct: {rcnsWhereSpeciesIsProduct}")
     
     # loop over rcnsWhereSpeciesIsProduct to generate rcnStringList
-    rcnStringList = []
-    for rcnID in rcnsWhereSpeciesIsProduct:
+    
+    rcnStringList = []  # list of reactions where speciesNum is a product
+    for rcnID in rcnsWhereSpeciesIsProduct:    
         reactantIndices = np.where(intMat[:,rcnID] == -1)[0].tolist() 
         if len(reactantIndices) == 0:           # input reaction, no reactants
             rcnStringList.append(f"w[{rcnID}]")
@@ -146,24 +156,24 @@ def getReactionString(model,speciesID):
             else:                                   # reactant is inhibiting
                 rcnStringList.append(f"inhib(y[{model.speciesIDs[reactant+1]}],w[{rcnID}],n[{rcnID}],EC50[{rcnID}])")
         
-        else:                                   # loop over reactants for AND gate
+        else:                                   
             rcnString = []
             for reactant in reactantIndices:    # multiple reactants 
-                 if notMat[reactant,rcnID] == 0: # reactant is activating            
-                     rcnString.append(f"act(y[{model.speciesIDs[reactant+1]}],w[{rcnID}],n[{rcnID}],EC50[{rcnID}])")
-                 else:                                   # reactant is inhibiting
-                     rcnString.append(f"inhib(y[{model.speciesIDs[reactant+1]}],w[{rcnID}],n[{rcnID}],EC50[{rcnID}])")
-                     rcnStringList.append("*".join(rcnString))
+                if notMat[reactant,rcnID] == 0: # reactant is activating            
+                      rcnString.append(f"act(y[{model.speciesIDs[reactant+1]}],w[{rcnID}],n[{rcnID}],EC50[{rcnID}])")
+                else:                                   # reactant is inhibiting
+                      rcnString.append(f"inhib(y[{model.speciesIDs[reactant+1]}],w[{rcnID}],n[{rcnID}],EC50[{rcnID}])") # up to here is correct
+            rcnStringList.append(f"AND(w[{rcnID}],[{','.join(rcnString)}])")  # BUG 3/25 potentially fixed but needs more testing
 
-    # combine reactions with OR gates
+    #print(f"DEBUG/model2PythonODE/getReactionString: rcnStringList: {rcnStringList}") 
     if len(rcnStringList) == 1:
         rcnString = rcnStringList[0]
     else:
         rcnString = nestedOR(rcnStringList)
-        
+    # print(f"DEBUG/model2PythonODEgetReactionString: rcnString: {rcnString}")   
     return rcnString
 
-def nestedOR(items):    # thanks Copilot!
+def nestedOR(items):    
     if len(items) == 1:
         return items[0]
     else:
@@ -176,6 +186,8 @@ def returnUtilityFunctions():
 # utility functions
 def act(x, w, n, EC50):
     # hill activation function with parameters w (weight), n (Hill coeff), EC50
+    if x < 0:   # BUG: needs more testing.
+        x = 0 
     beta = ((EC50**n)-1)/(2*EC50**n-1)
     K = (beta-1)**(1/n)
     fact = w*(beta*x**n)/(K**n+x**n)

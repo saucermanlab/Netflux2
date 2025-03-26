@@ -1,5 +1,5 @@
 Netflux2 development notes
-Updated 3/15/2025, version: alpha1
+Updated 3/24/2025, version: alpha1
 by Jeff Saucerman
 
 Netflux2 requires installation of:
@@ -15,6 +15,7 @@ xls2model.py
     createInteractionMatrix(model) adds interaction_matrix and not_matrix to model
     mymodel = createModel('exampleNet.xlsx') # is hard-coded currently
 model2PythonODE.py
+    BUG 3/24: CURRENTLY NOT ASSEMBLING REACTIONS CORRECTLY
     writeModel(model) calls writeParamsFile, writeRunFile, writeODEfile
     writeParamsFile writes modelName_params.py
     writeRunFile writes modelName_run.py
@@ -47,12 +48,24 @@ index.html
     species parameter fields y0, ymax, tau. updating calls updateSpeciesParams() 
     reaction parameter select: changing this calls getSelectedReactionParams()
     reaction parameter fields w, ec50, n. updating calls updateReactionParams()
-       
-To do: 
-Some bugs regarding updating parameters in complex simulations.
-Bug in updated status message- shows reset parameters but not simulation completed
-Testing with other network models
+Hosting on pythonanywhere.com
+        It's working!
+        I had to put the 'uploads' folder directly under "netflux"
+        Had to install flask-session 0.6: pip3
+
+Netflux file formatting errors:
+Should start input reaction as '=> A'
+Single space separating variables or operators
+Represent AND gates with '&'. Use of '+' is deprecated.
+Represent OR gates as separate reactions on separate lines, e.g. 'A => C','B => C'
+Inhibition '!' is used only for reactants.
+
+
+Bugs:   
+clear uploads directory at start
+clear flask session data?    
 Model exporting through webapp
+Error message for parsing reactions
 
 Flask programming tips:
 - Copilot very helpful

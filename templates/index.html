@@ -19,6 +19,8 @@
         label { width: 142px }
         input {width: 142px}
         select { width: 150px }
+        #variables { height: 140px;
+}
     </style>
 </head>
 <body>
@@ -35,7 +37,7 @@
         <div class="column">
             <h3>Simulation Settings</h3>
             <label>Time Span:<br> <input type="number" id="tmax" value=10></label><br>
-            <label for="variables">Variables to Plot:<br></label>
+            <label for="variables">Species to Plot:<br></label>
             <select id="variables" multiple>
                 <!-- Options will be dynamically added here by openmodel() -->
             </select><br><br>
@@ -64,12 +66,13 @@
             </select><br>
             <!-- load the values for the selected reaction -->
             <label>W:<br> <input type="number" id="w" onchange="updateReactionParams()"></label><br>
-            <label>EC50:<br> <input type="number" id="ec50" onchange="updateReactionParams()"></label><br>
             <label>n:<br> <input type="number" id="n" onchange="updateReactionParams()"></label><br>
+            <label>EC50:<br> <input type="number" id="ec50" onchange="updateReactionParams()"></label><br>
         </div>
         <div class="columnWide">
             <h3>Plot</h3>
-            <img id="plot" src="" alt="Simulation Plot" style="width:100%;">
+            <!-- <img id="plot" src="images/Netflux_logo.png" alt="Simulation Plot" style="width:50%;"> -->
+            <img id="plot" src="{{ url_for('static', filename='Netflux_logo.png') }}" alt="Simulation Plot" style="max-width: 400px">
         </div>
     </div>
     
@@ -198,7 +201,6 @@
                 type: "POST",
                 contentType: "application/json",
                 success: function(response) { // returns all species and reaction params as lists
-                    document.getElementById("status").innerText = response.status;
                     
                     // loading values for selected species into web fields
                     var speciesIDs = response.speciesIDs
@@ -217,10 +219,11 @@
                         return reaction == selectedReaction;
                     })
                     document.getElementById("w").value = response.w[pos]
-                    document.getElementById("ec50").value = response.ec50[pos]
                     document.getElementById("n").value = response.n[pos]
-                    
+                    document.getElementById("ec50").value = response.ec50[pos]
+                                        
                     console.log("reset params")
+                    document.getElementById("status").innerText = response.status;
                 },
                 error: function(error) {
                     console.error("Error resetting parameters:", error);
@@ -279,8 +282,8 @@
         function updateReactionParams() { //updates parameters from the form
             var selectedReaction = document.getElementById("reactionList").value;
             var w = document.getElementById("w").value;
-            var ec50 = document.getElementById("ec50").value;
             var n = document.getElementById("n").value;
+            var ec50 = document.getElementById("ec50").value;
             $.ajax({
                 url: '/updateReactionParams', // calls webapp.py/updateReactionParams
                 type: 'POST',
@@ -328,8 +331,8 @@
                 success: function(response) {
                     // Assuming response contains w, ec50, and n for the selected Reaction
                     // bug says no value
-                    document.getElementById("w").value = response.w;
                     document.getElementById("ec50").value = response.ec50;
+                    document.getElementById("w").value = response.w;
                     document.getElementById("n").value = response.n;
                     console.log("Reaction parameters refreshed for ", selectedReaction);
                 },

@@ -43,6 +43,10 @@ def createModel(xlsfilename):
     mymodel= NetfluxModel(modelName,speciesIDs,speciesNames,speciesParams,reactionIDs,reactionRules,reactionParams)
     mymodel = createInteractionMatrix(mymodel)
     
+    #print(f"DEBUG/createModel: mymodel: {mymodel}")
+    #print(f"DEBUG/createModel: Species IDs: {mymodel.speciesIDs.tolist()}")
+    #print(f"DEBUG/createModel: Reaction Rules: {mymodel.reactionRules.tolist()}")
+    
     return mymodel
 
 def createInteractionMatrix(model):
@@ -55,17 +59,18 @@ def createInteractionMatrix(model):
 
     # Fill interaction matrix
     for i, rule in enumerate(model.reactionRules, start=1):
-   #     print(['reaction: ', rule]) # FOR DEBUG
+        #print(f"DEBUG/createInteractionMatrix: reaction:{rule}")
         reactants, product = rule.split('=>') # only 1 product allowed
         reactants = reactants.split('&')
+        #print(f"DEBUG/createInteractionMatrix: reactants:{reactants}") # parsing problems here sometimes caused by use of "+" instead of "&"
         
         for reactant in reactants:
             reactant = reactant.strip()
             if reactant:
-                reactantID = model.speciesIDs.index[model.speciesIDs == reactant.strip('!')][0] # remove ! for inhibiting reactants
+                #print(f"DEBUG/createInteractionMatrix: reactant:{reactant}")
+                reactantID = model.speciesIDs.index[model.speciesIDs == reactant.strip('!')][0] # remove ! for inhibiting reactants (FIXME: prolbem if there is no element 0?)
                 if '!' in reactant:
                     not_matrix[reactantID-1, i-1] = 1 # reactant is inhibiting
-   #             print(['reactant:',reactant]) # FOR DEBUG
                 interaction_matrix[reactantID-1, i-1] = -1  # add reactant; subtracting because indexing on species and rules starts at 1
         
         product = product.strip()
@@ -79,14 +84,16 @@ def createInteractionMatrix(model):
     
     return model
 
-mymodel = createModel('exampleNet.xlsx')
+#mymodel = createModel('exampleNet.xlsx') // TEMP when testing
 
+# Debugging lines
 # # Display the extracted data
-# print("Species IDs:", mymodel.speciesIDs.tolist())
-# print("Species Names:", mymodel.speciesNames.tolist())
-# print("Reaction IDs:", mymodel.reactionIDs.tolist())
-# print("Reaction Rules:", mymodel.reactionRules.tolist())
-# print("Interaction Matrix:", mymodel.interactionMatrix.tolist())
-# print("Not Matrix:", mymodel.notMatrix.tolist())
+# print(f"DEBUG/createModel: mymodel: {mymodel}")
+# print(f"DEBUG/createModel: Species IDs: {mymodel.speciesIDs.tolist()}")
+# print(f"DEBUG/createModel: Species Names: {mymodel.speciesNames.tolist()}")
+# print(f"DEBUG/createModel: Reaction IDs: {mymodel.reactionIDs.tolist()}")
+# print(f"DEBUG/createModel: Reaction Rules: {mymodel.reactionRules.tolist()}")
+# print(f"DEBUG/createModel: Interaction Matrix: {mymodel.interactionMatrix.tolist()}")
+# print(f"DEBUG/createModel: Not Matrix: {mymodel.notMatrix.tolist()}")
 
 
