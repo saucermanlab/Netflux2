@@ -1,10 +1,15 @@
 Netflux2 development notes
-Updated 3/24/2025, version: alpha1
+Updated 3/24/2025, version: alpha2
 by Jeff Saucerman
+
+version alpha2: export models in Python or XGMML formats
+version alpha1: functional webapp, loads models, runs simulations, runs on 
+    PythonAnywhere at netflux.pythonanywhere.com
 
 Netflux2 requires installation of:
 flask, flask-session >=0.6, numpy, matplotlib, scipy
 Install flask-session with: conda install conda-forge::flask-session to get v0.6
+or pip3 install Flask-sesssion to get 0.8
 
 exampleNet.xls: example Netflux model
 exampleNet_test.py: shows how to load Netflux model, run in write or interactive mode
@@ -15,7 +20,6 @@ xls2model.py
     createInteractionMatrix(model) adds interaction_matrix and not_matrix to model
     mymodel = createModel('exampleNet.xlsx') # is hard-coded currently
 model2PythonODE.py
-    BUG 3/24: CURRENTLY NOT ASSEMBLING REACTIONS CORRECTLY
     writeModel(model) calls writeParamsFile, writeRunFile, writeODEfile
     writeParamsFile writes modelName_params.py
     writeRunFile writes modelName_run.py
@@ -24,10 +28,15 @@ model2PythonODE.py
         getReactionString(model,speciesID) creates reaction strings for ODE file
         nestedOR nests reactions for OR gates
         returnUtilityFunctions contains the code for act/inhib/AND/OR
+model2xgmml.py
+    interaction_matrix_to_xgmml(model) writes network in XGMML format. Not yet tested
+    in Cytoscape and likely needs further work.
 webapp.py 
     Web interface similar to the original Netflux
     Currently it loads exampleNet, can run complex simulations, replot
     openmodel() opens file dialog, creates NetfluxModel, reactionParams, speciesParams, speciesIDs, reactionRules
+    downloadmodel() writes 3 files to uploads, then downloads them in browser
+    downloadxgmml() calls model2xgmml, writes xgmml, then downloads it from browser
     simulate() loads the ODEfunc, params, runs either new or continued simulations
     create_plot() takes the selected variables, t, and y and makes a plot
     replot() runs create_plot() again (needed?)
@@ -50,8 +59,8 @@ index.html
     reaction parameter fields w, ec50, n. updating calls updateReactionParams()
 Hosting on pythonanywhere.com
         It's working!
-        I had to put the 'uploads' folder directly under "netflux"
-        Had to install flask-session 0.6: pip3
+        I had to put the 'uploads' and 'models' folders directly under "netflux"
+        in console: pip3 install Flask-session
 
 Netflux file formatting errors:
 Should start input reaction as '=> A'
@@ -60,12 +69,15 @@ Represent AND gates with '&'. Use of '+' is deprecated.
 Represent OR gates as separate reactions on separate lines, e.g. 'A => C','B => C'
 Inhibition '!' is used only for reactants.
 
+To do:
+Cleanup- clear ploads directory at start, clear flask session data
+Error handling
 
-Bugs:   
-clear uploads directory at start
-clear flask session data?    
-Model exporting through webapp
-Error message for parsing reactions
+Planned features:
+Update XGMML if given a previous one
+Cytoscape integration?
+Model library
+Include more advanced codes for sensitivity analysis,  validation, parameter estimation?
 
 Flask programming tips:
 - Copilot very helpful

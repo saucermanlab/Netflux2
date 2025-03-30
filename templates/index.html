@@ -28,10 +28,12 @@
         <div class="menu" onclick="toggleMenu()">☰</div>
         <div class="menu-options" id="menu-options">
             <a href="#" onclick="triggerFileInput();">Open Model</a>
+            <a href="#" onclick="downloadmodel();">Download as Python</a>
+            <a href="#" onclick="downloadxgmml();">Download as XGMML</a>
             <a href="/help" target="__blank">Help</a>
             <a href="/about" target="__blank">About</a>
         </div>
-        <div><b>Netflux2_alpha1</b></div>
+        <div><b>Netflux2_alpha2</b></div>
     </div>
     <div class="container">
         <div class="column">
@@ -91,16 +93,19 @@
             toggleMenu()
         }
             
-        function openmodel() {
-            let formData = new FormData();
-            let fileInput = document.getElementById("fileInput");
-            
-            if (fileInput.files.length === 0) {
+        function openmodel(default_filename = null) { // default model filename specified in window.onload()
+            var formData = new FormData();
+            var fileInput = document.getElementById("fileInput");
+            if (default_filename) { // load default model
+                console.log("loading default model: ", default_filename);
+                formData.append("filename", default_filename); // append filename to formData
+            } else if (fileInput.files.length === 0) { // no model specified
                 alert("Please select a file first.");
-                return;
+            return;
+            } else { // load model from file dialog
+                console.log("loading model from file dialog: ", fileInput.files[0]);
+                formData.append("file", fileInput.files[0]);
             }
-    
-            formData.append("file", fileInput.files[0]);
     
             $.ajax({
                 url: "/openmodel",
@@ -154,7 +159,86 @@
                 }
             });
         }
-          
+                   
+        function downloadmodel() {
+            $.ajax({
+                url: "/downloadmodel",
+                type: "POST",
+                contentType: "application/json",
+                data: [],
+                success: function(response) {
+                    toggleMenu();
+                    //console.log("Response:", response); // Log the entire response object
+                    if (response.filenames) {
+                        //console.log("filenames returned to downloadmodel")
+                        const files = response.filenames;
+                        files.forEach(file => {
+                            const filePath = `/uploads/${file}`;
+                            $.ajax({
+                                url: filePath,
+                                type: 'HEAD',
+                                success: function() {
+                                    console.log("File downloading:", filePath); // Log file found
+                                    const link = document.createElement('a');
+                                    link.href = filePath;
+                                    link.download = file;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                },
+                                error: function() {
+                                    console.error("File not found:", filePath);
+                                    alert("File not found: " + filePath);
+                                }
+                            }); // ajax inside forEach
+                        }); // end forEach loop
+                        document.getElementById("status").innerText = response.status;
+                    }    
+                }, // end of success function
+                error: function(error) {
+                    console.error("Error exporting model:", error);
+                }
+            });
+        } // end of downloadmodel function    
+        
+        function downloadxgmml() {
+            $.ajax({
+                url: "/downloadxgmml",
+                type: "POST",
+                contentType: "application/json",
+                data: [],
+                success: function(response) {
+                    toggleMenu();
+                    //console.log("Response:", response); // Log the entire response object
+                    if (response.filename) {
+                        console.log("filename returned from downloadxgmml")
+                        const filePath = `/uploads/${response.filename}`;
+                        $.ajax({
+                            url: filePath,
+                            type: 'HEAD',
+                            success: function() {
+                                console.log("File downloading:", filePath); // Log file found
+                                const link = document.createElement('a');
+                                link.href = filePath;
+                                link.download = response.filename;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            },
+                            error: function() {
+                                console.error("File not found:", filePath);
+                                alert("File not found: " + filePath);
+                            }
+                        }); // ajax 
+                        document.getElementById("status").innerText = response.status;
+                    }    
+                }, // end of success function
+                error: function(error) {
+                    console.error("Error exporting model:", error);
+                }
+            });
+        } // end of downloadxgmml function
+           
         function simulate() {
             let data = {
                 tmax: document.getElementById("tmax").value,
@@ -342,7 +426,15 @@
 
         window.onload = function() {
             console.log("loading webapp")
-            document.getElementById("status").innerText = "Status: Open a model";
+            var default_filename = "exampleNet.xlsx";           // automatically load exampleNet from uploads folder
+            //var default_filename= [];                        // don't automatically load a network'
+            if (default_filename.length > 0) {
+                openmodel(default_filename);
+                document.getElementById("status").innerText = "Status: exampleNet loaded";
+            } else {
+                document.getElementById("status").innerText = "Status: Open a model";
+            }
+  
         };
 
     </script>

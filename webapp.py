@@ -1,30 +1,29 @@
 # webapp.py: Netflux2 web app
 # Jeff Saucerman 3/2025
-# Last updated 3/23/2025 JS: functional with exampleNet
+# Last updated 3/29/2025 JS: functional with exampleNet
 # Requires: flask, flask-session >=0.6, numpy, matplotlib, scipy, lorenz
 # To run webapp.py in Spyder, just hit run, then open http:/127.0.0.1:5000
 #
 # Current issues:
-# Some bugs with status field.
-# 3/25 fixed bugs with parameter order
+# Some bugs with status field, parameter updates.
 #
 # To do:
 # Need to test with more models and conditions.
 
-from flask import Flask, render_template, request, jsonify, session, g
+from flask import Flask, render_template, request, jsonify, session, g, send_from_directory
 from flask_session import Session # server-side sessions
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import io, os, base64
-import xls2model, model2PythonODE
+import xls2model, model2PythonODE, model2xgmml
 
-os.chdir('./myapp')
 app = Flask(__name__)
 app.secret_key = 'NetfluxNetfluxNetflux'       # for session variables
 app.config['SESSION_TYPE'] = 'filesystem'   # server-side sessions
 app.config['SESSION_FILE_DIR'] = './flask_sessions'
 app.config['UPLOAD_FOLDER'] = './uploads'
+app.config['MODELS_FOLDER'] = './models'
 
 Session(app)                                # server-side sessions
 
@@ -33,48 +32,99 @@ def index():
     return render_template('index.html')
 
 @app.route('/openmodel', methods=['GET','POST'])
-def openmodel():
-    # Opens file dialog, uploads Netflux xlsx, creates NetfluxModel with loadParams and ODEfunc attributes
-    if 'file' not in request.files:
-        return jsonify({"status": "Error: No file uploaded"}), 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"status": "Error: No file selected"}), 400
-
-    if file:
-        try:
-            filename = file.filename
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            #filepath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], filename)) # BUGFIX JS 3/25 use absolute path instead of relative path
-            file.save(filepath)
-            print(f"{filename} uploaded")
+def openmodel():   
+    print("Starting openmodel")    
+    try:
+        if request.method == 'POST':
+            if 'filename' in request.form:  # Check if default_filename is in form data
+                filename = request.form['filename']
+                print(f"DEBUG:openmodel filename:{filename}")
+                filepath = os.path.join(app.config['MODELS_FOLDER'], filename)
+                #print(f"DEBUG:openmodel filepath:{filepath}")
+            elif 'file' in request.files:  # Check if file is uploaded via file dialog
+                file = request.files['file']
+                if file.filename == '':
+                    return jsonify({"status": "Error: No file selected"}), 400
+                filename = file.filename
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                print(f"{filename} send to uploads folder")
+            else:
+                return jsonify({"status": "Error: No file uploaded"}), 400
     
-            # Generate model and parameters
-            mymodel = xls2model.createModel(filepath)
-            print(f"DEBUG/openmodel: mymodel: {mymodel}")
-            ODEfuncText = model2PythonODE.generateODEfile(mymodel)
-            #print(f"DEBUG/openmodel: ODEfuncText: {ODEfuncText}")
-            session.clear()
-            session['NetfluxModel'] = mymodel
-            session['reactionParams'] = mymodel.reactionParams
-            session['speciesParams'] = mymodel.speciesParams
-            #print(f"DEBUG/openmodel: speciesParams:{mymodel.speciesParams}")
-            #print(f"DEBUG/openmodel: reactionParams: {mymodel.reactionParams}")
-            session['ODEfuncText'] = ODEfuncText
+        # Generate model and parameters
+        print(f"DEBUG/openmodel: filepath:{filepath}")
+        mymodel = xls2model.createModel(filepath)
+        print(f"DEBUG/openmodel: mymodel: {mymodel}")
+        ODEfuncText = model2PythonODE.generateODEfile(mymodel)
+        #print(f"DEBUG/openmodel: ODEfuncText: {ODEfuncText}")
+        session.clear()
+        session['NetfluxModel'] = mymodel
+        session['reactionParams'] = mymodel.reactionParams
+        session['speciesParams'] = mymodel.speciesParams
+        #print(f"DEBUG/openmodel: speciesParams:{mymodel.speciesParams}")
+        #print(f"DEBUG/openmodel: reactionParams: {mymodel.reactionParams}")
+        session['ODEfuncText'] = ODEfuncText
             
-            speciesIDs = mymodel.speciesIDs.tolist()  
-            reactionRules = mymodel.reactionRules.tolist()
-            session['speciesIDs'] = speciesIDs
-            session['reactionRules'] = reactionRules
-            #print(f"DEBUG/openmodel: speciesIDs:{speciesIDs}")
-            #print(f"DEBUG/openmodel: reactionRules: {reactionRules}")
-            return jsonify({"status": "Status: Model opened", "variables": speciesIDs, "reactionRules": reactionRules})
-        except Exception as e:
-            print(f"DEBUG/openmodel: Exception: {e}")
-            return jsonify({'status': f'Status: Error opening model: {str(e)}'})
-    
+        speciesIDs = mymodel.speciesIDs.tolist()  
+        reactionRules = mymodel.reactionRules.tolist()
+        session['speciesIDs'] = speciesIDs
+        session['reactionRules'] = reactionRules
+        #print(f"DEBUG/openmodel: speciesIDs:{speciesIDs}")
+        #print(f"DEBUG/openmodel: reactionRules: {reactionRules}")
+        return jsonify({"status": "Status: Model opened", "variables": speciesIDs, "reactionRules": reactionRules})
+    except Exception as e:
+        print(f"DEBUG/openmodel: Exception: {e}")
+        return jsonify({'status': f'Status: Error opening model: {str(e)}'}) 
     return jsonify({"status": "Error processing file"}), 500
+
+@app.route('/downloadmodel', methods=['POST'])
+def downloadmodel():
+    try:
+        print("starting downloadmodel")
+        # Assuming you have the model stored in the session; DEBUG: add error handling
+        mymodel = session.get('NetfluxModel',[])
+        #print(f"DEBUG/downloadmodel: mymodel.modelName:{mymodel.modelName}")
+
+        # Export the ODE, params, and run files to the upload folder
+        upload_folder = app.config['UPLOAD_FOLDER']
+        #print(f"DEBUG/downloadmodel: exporting model to export_path: {upload_folder}")
+        model2PythonODE.writeModel(mymodel,export_path=upload_folder)    
+        modelName = mymodel.modelName
+        print(f"DEBUG/downloadmodel: modelName:{modelName}")
+        filenames = [f"{modelName}_ODEs.py", f"{modelName}_run.py", f"{modelName}_params.py"]
+        return jsonify({"status": f"Status: {modelName} exported to uploads folder", "filenames": filenames})
+        
+    except Exception as e:
+        return jsonify({'status': f'Status: Error downloading model: {str(e)}'})
+
+@app.route('/downloadxgmml', methods=['POST'])
+def downloadxgmml():
+    try:
+        print("starting downloadxgmml")
+        # Assuming you have the model stored in the session; DEBUG: add error handling
+        mymodel = session.get('NetfluxModel',[])
+        modelName = mymodel.modelName
+        #print(f"DEBUG/downloadmodel: mymodel.modelName:{mymodel.modelName}")
+
+        # Export the ODE, params, and run files to the upload folder
+        upload_folder = app.config['UPLOAD_FOLDER']
+        #model2PythonODE.writeModel(mymodel,export_path=upload_folder)    
+        
+        model2xgmml.interaction_matrix_to_xgmml(mymodel, export_path=upload_folder)
+        
+        
+        print(f"DEBUG/downloadxgmml: modelName:{modelName}")
+        filename = f"{modelName}.xgmml"
+        return jsonify({"status": f"Status: {modelName} XGMML file exported to uploads folder", "filename": filename})
+        
+    except Exception as e:
+        return jsonify({'status': f'Status: Error downloading XGMML: {str(e)}'})
+
+@app.route('/uploads/<filename>')
+def download_file(filename):
+    print(f"DEBUG/download_file: serving /uploads/{filename}")
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/help')
 def helppage():
@@ -97,7 +147,6 @@ def simulate():     # runs when you hit Simulate button
         reactionParams = np.array(session.get('reactionParams', []))
         y0, ymax, tau = speciesParams[:, 0], speciesParams[:, 1], speciesParams[:, 2]
         w, n, EC50 = reactionParams[:, 0], reactionParams[:, 1], reactionParams[:, 2]
-        #print("fDEBUG/simulate: parameters loaded")
 
         # load ODEfunc using Flask g variable
         local_namespace = {}
@@ -226,8 +275,8 @@ def updateReactionParams(): # when you change a parameter value, this saves it i
     reactionParams[pos,1] = n
     reactionParams[pos,2] = ec50
     session['reactionParams'] = reactionParams
-    print(f"DEBUG/updateReactionParams: updated reaction: {selectedReaction}, w: {w}, n: {n}, ec50: {ec50}")
-    print("DEBUG: finished updateReactionParams()")
+    #print(f"DEBUG/updateReactionParams: updated reaction: {selectedReaction}, w: {w}, n: {n}, ec50: {ec50}")
+    #print("DEBUG: finished updateReactionParams()")
     return jsonify({'status': 'Status: Updated species parameters'})
 
 @app.route('/getSelectedSpeciesParams', methods=['POST'])
@@ -260,4 +309,6 @@ def getSelectedReactionParams(): # when you change which parameter is selected, 
 
 # So that it will run in Spyder
 if __name__ == "__main__":
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
     app.run(host='127.0.0.1', port=5000, debug=False) # Spyder crashes with debug=True
