@@ -8,6 +8,7 @@
 # reactionParameters contains: w, n, and EC50 parameters
 import numpy as np
 import pandas as pd
+import os
 
 # internal representation of a Netflux2 model
 class NetfluxModel:
@@ -39,7 +40,7 @@ def createModel(xlsfilename):
     reactionRules = reactions_df.iloc[1:, 2]  # Start Row 2, Column C
     reactionParams = reactions_df.iloc[1:,3:6] # w, n, and EC50 parameters
     
-    modelName = xlsfilename.strip('.xlsx')
+    modelName = os.path.basename(xlsfilename).strip('.xlsx')
     mymodel= NetfluxModel(modelName,speciesIDs,speciesNames,speciesParams,reactionIDs,reactionRules,reactionParams)
     mymodel = createInteractionMatrix(mymodel)
     

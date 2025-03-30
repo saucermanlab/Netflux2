@@ -6,12 +6,10 @@
 # 1/20/2025 JS: ported from MATLAB versions
 # replicates features of exportPythonODE.m and Netflux2PythonODE.m
 # STATUS: 
-# BUG: <string>:201: RuntimeWarning: invalid value encountered in scalar power
-#   This seems to do with the powers in the act function- potential bug.
+# BUG: not loading correct file when running export model
 
 import numpy as np
-import datetime
-import io
+import datetime, io, os
 
 def returnModelFuncs(model):
 # Returns loadParamFunc and ODEfunc as handles, runScript as ioString object
@@ -28,26 +26,34 @@ def returnModelFuncs(model):
     return loadParamsFunc, runScript, ODEfunc
 
 
-def writeModel(model):
+def writeModel(model,export_path=[]):
 # Writes modelname_params.py, modelname_run.py, modelname_ODEs.py
 # confirmed working for exampleNet, 3/15/2025
+    
+    print(f"DEBUG/writeModel: modelName:{model.modelName}")
+    if export_path:
+        print(f"DEBUG/writeModel: export_path:{export_path}")
+        filename = os.path.join(export_path, str(model.modelName)) 
+    else:
+        filename = str(model.modelName)
+    print(f"DEBUG/writeModel: filename:{filename}")
     paramsFileText = generateParamsFile(model)
-    filename = str(model.modelName) + "_params.py"
-    with open(filename, 'w') as file:
+    paramsFilename = filename + "_params.py"
+    with open(paramsFilename, 'w') as file:
         file.write(paramsFileText)
-    print(f"Netflux2 wrote {filename}")
+    print(f"Netflux2 wrote {paramsFilename}")
     
     runFileText = generateRunFile(model)
-    filename = str(model.modelName) + "_run.py"
-    with open(filename, 'w') as file:
+    runFilename = filename + "_run.py"
+    with open(runFilename, 'w') as file:
         file.write(runFileText)
-    print(f"Netflux2 wrote {filename}")
+    print(f"Netflux2 wrote {runFilename}")
     
     ODEfuncText = generateODEfile(model)
-    filename = str(model.modelName) + "_ODEs.py"
-    with open(filename, 'w') as file:
+    modelFilename = filename + "_ODEs.py"
+    with open(modelFilename, 'w') as file:
         file.write(ODEfuncText)
-    print(f"Netflux2 wrote {filename}")
+    print(f"Netflux2 wrote {modelFilename}")
 
 def generateParamsFile(model):
 # Takes an LDEmodel and writes modelName_params.py, which will be loaded

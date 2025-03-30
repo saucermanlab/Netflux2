@@ -13,6 +13,7 @@
 from flask import Flask, render_template, request, jsonify, session, g, send_from_directory
 from flask_session import Session # server-side sessions
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import io, os, base64
@@ -55,6 +56,7 @@ def openmodel():
         # Generate model and parameters
         print(f"DEBUG/openmodel: filepath:{filepath}")
         mymodel = xls2model.createModel(filepath)
+        modelName = mymodel.modelName
         print(f"DEBUG/openmodel: mymodel: {mymodel}")
         ODEfuncText = model2PythonODE.generateODEfile(mymodel)
         #print(f"DEBUG/openmodel: ODEfuncText: {ODEfuncText}")
@@ -72,7 +74,7 @@ def openmodel():
         session['reactionRules'] = reactionRules
         #print(f"DEBUG/openmodel: speciesIDs:{speciesIDs}")
         #print(f"DEBUG/openmodel: reactionRules: {reactionRules}")
-        return jsonify({"status": "Status: Model opened", "variables": speciesIDs, "reactionRules": reactionRules})
+        return jsonify({"status": f"Status: Model {modelName} opened", "variables": speciesIDs, "reactionRules": reactionRules})
     except Exception as e:
         print(f"DEBUG/openmodel: Exception: {e}")
         return jsonify({'status': f'Status: Error opening model: {str(e)}'}) 
@@ -105,21 +107,46 @@ def downloadxgmml():
         # Assuming you have the model stored in the session; DEBUG: add error handling
         mymodel = session.get('NetfluxModel',[])
         modelName = mymodel.modelName
-        #print(f"DEBUG/downloadmodel: mymodel.modelName:{mymodel.modelName}")
-
-        # Export the ODE, params, and run files to the upload folder
         upload_folder = app.config['UPLOAD_FOLDER']
-        #model2PythonODE.writeModel(mymodel,export_path=upload_folder)    
-        
         model2xgmml.interaction_matrix_to_xgmml(mymodel, export_path=upload_folder)
-        
-        
-        print(f"DEBUG/downloadxgmml: modelName:{modelName}")
+        #print(f"DEBUG/downloadxgmml: modelName:{modelName}")
         filename = f"{modelName}.xgmml"
         return jsonify({"status": f"Status: {modelName} XGMML file exported to uploads folder", "filename": filename})
         
     except Exception as e:
         return jsonify({'status': f'Status: Error downloading XGMML: {str(e)}'})
+
+@app.route('/downloadSimulation', methods=['POST'])
+def downloadSimulation():
+    try:
+        print("starting downloadSimulation")
+        # Assuming you have the simulation stored in t and y; DEBUG: add error handling
+        mymodel = session.get('NetfluxModel',[])
+        modelName = mymodel.modelName
+        speciesIDs = mymodel.speciesIDs.tolist()
+        print(f"DEBUG/downloadSimulation: speciesIDs:{speciesIDs}")
+        t = np.array(session.get('t', [])) # session variable
+        y = np.array(session.get('y', [])).T # transpose so it matches shape of t
+        
+        if t.size == 0 or y.size == 0:
+            raise ValueError("t or y arrays are empty")
+        print(f"DEBUG/downloadSimulation: y: {y}")
+        print(f"DEBUG/downloadSimulation: y.shape: {y.shape}")
+        
+        df = pd.DataFrame(t, columns=['t'])
+        for i, species in enumerate(speciesIDs):
+            df[species] = y[:, i]
+        print(f"DEBUG/downloadSimulation: df: {df}")
+        filename = f"{modelName}_simulation.csv"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        df.to_csv(filepath, index=False)
+        # if os.path.exists(filepath):
+        #     print(f"DataFrame successfully written to {filepath}")
+
+        return jsonify({"status": f"Status: {filename} exported to uploads folder", "filename": filename})
+        
+    except Exception as e:
+        return jsonify({'status': f'Status: Error downloading simulation: {str(e)}'})
 
 @app.route('/uploads/<filename>')
 def download_file(filename):
@@ -224,13 +251,15 @@ def resetparams():  # runs when you click Reset Parameters
     mymodel = session.get('NetfluxModel',[])
     speciesIDs = mymodel.speciesIDs.tolist()
     reactionRules = mymodel.reactionRules.tolist()
-    speciesParams = np.array(mymodel.speciesParams)
-    reactionParams = np.array(mymodel.reactionParams)
+    speciesParams = np.array(mymodel.speciesParams) 
+    reactionParams = np.array(mymodel.reactionParams) 
     #print(f"DEBUG/resetparams: reaectionParams:{reactionParams}")
     y0, ymax, tau = speciesParams[:, 0].tolist(), speciesParams[:, 1].tolist(), speciesParams[:, 2].tolist()
     w, n, ec50 = reactionParams[:, 0].tolist(), reactionParams[:, 1].tolist(), reactionParams[:, 2].tolist()  
     session['y0'], session['ymax'], session['tau'] = y0, ymax, tau
     session['w'], session['n'], session['EC50'] = w, n, ec50
+    session['speciesParams'] = speciesParams # overwrite current values with original values
+    session['reactionParams'] = reactionParams
     #print(f"DEBUG: y0:{y0} ymax:{ymax} tau:{tau}")
     #print(f"DEBUG: w:{w} n:{n}, ec50:{ec50} ")    
     return jsonify({'status': 'Status: Parameters reset', 'speciesIDs':speciesIDs, \

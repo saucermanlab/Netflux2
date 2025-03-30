@@ -1,8 +1,8 @@
 Netflux2 development notes
-Updated 3/24/2025, version: alpha2
+Updated 3/30/2025, version: alpha2
 by Jeff Saucerman
 
-version alpha2: export models in Python or XGMML formats
+version alpha2: export models in Python or XGMML formats, simulation CSV, error handling, documentation
 version alpha1: functional webapp, loads models, runs simulations, runs on 
     PythonAnywhere at netflux.pythonanywhere.com
 
@@ -37,6 +37,7 @@ webapp.py
     openmodel() opens file dialog, creates NetfluxModel, reactionParams, speciesParams, speciesIDs, reactionRules
     downloadmodel() writes 3 files to uploads, then downloads them in browser
     downloadxgmml() calls model2xgmml, writes xgmml, then downloads it from browser
+    downloadSimulation() loads model, t, y, writes csv, then downloads it from browser
     simulate() loads the ODEfunc, params, runs either new or continued simulations
     create_plot() takes the selected variables, t, and y and makes a plot
     replot() runs create_plot() again (needed?)
@@ -72,6 +73,7 @@ Inhibition '!' is used only for reactants.
 To do:
 Cleanup- clear ploads directory at start, clear flask session data
 Error handling
+More work needed on model2xgmml.py
 
 Planned features:
 Update XGMML if given a previous one

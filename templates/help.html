@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lorenz Simulator - About</title>
+    <title>Netflux2 - Help</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; }
@@ -21,16 +21,51 @@
     <div class="navbar">
         <div class="menu" onclick="toggleMenu()">☰</div>
         <div class="menu-options" id="menu-options">
-            <a href="/">Lorenz</a>
+            <a href="/">Netflux2</a>
             <a href="/about">About</a>
         </div>
-        <div><b>Lorenz</b></div>
+        <div><b>Netflux2</b></div>
     </div>
 
 <h1>Help</h1><br>
-Documentation not yet available.<br><br>
+Netflux2(version alpha2, 3/30/2025) is under development. We appreciate your feedback by submitting this <a href="https://forms.gle/iYwcQBEwGcLCygzv9">brief survey.</a><br><br>
 
-Please email Jeff Saucerman at jsaucerman@virginia.edu if you find bugs or have suggestions.
+You are also welcome to email Jeff Saucerman at jsaucerman@virginia.edu if you find bugs or have suggestions.<br><br>
+
+The Netflux documentation and tutorial is accepted at PLOS Computational Biology, with preprint available <a href="https://www.biorxiv.org/content/10.1101/2024.01.11.575227v2">here</a>.<br><br>
+
+Video tutorials are available on <a href="https://www.youtube.com/watch?v=tU2gU8d5hvQ&list=PLTbDE7ZQfKy-ijd5ZrCQJ7eB-NSCQKIBi">YouTube</a>.<br><br>
+
+<h3>Running basic simulations</h3>
+Netflux2 automatically loads exampleNet. You can then run basic simulations using the below buttons and parameters.<br><br>
+<b>Time span: </b>specify the duration of the simulation.<br>
+<b>Simulate: </b>click to run a simulation with the current parameters.<br>
+<b>Plot: </b>replot the simulation using only the specified species.<br>
+<b>Reset parameters: </b>reset the species and reaction parameters back to their original values.<br>
+<b>Reset simulation: </b>reset time and the timecourse of species activities.<br>
+
+<h3>Species parameters</h3>
+<b>Species: </b>select the species that you would like to adjust.<br>
+<b>Y0: </b>initial value for that species. By default, we use Y0 = 0.<br>
+<b>Ymax: </b>maximum value for that species. By default, we use Ymax = 1.<br>
+<b>tau: </b>time constant that determines how fast that species can change. By default, we use tau = 0.1 h for signaling, 1 h for transcription, and 10 h for translation.<br><br>
+
+<h3>Reaction parameters</h3>
+<b>Reactions: </b>select the reaction that you would like to adjust.<br>
+<b>w: </b>reaction weight for the strength of reaction, 0 <= w <= 1. By default, we use w = 1.<br>
+<b>n: </b>Hill coefficient, affecting apparent cooperativitiy of activation. By default, we use n = 1.4.<br>
+<b>EC50: </b>sensitivity of the reaction to the upstream reactant. By default, we use EC50 = 0.5, so that half-maximal reactant causes half-maximal activation of the product.<br><br>
+The above default parameter values were determined in <a href="https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-4-157">
+Kraeutler et al. BMC Sys Bio 2010</a>. In that study, we optimized the default parameters to emulate the behavior of a validated mass-action
+ kinetic network of beta-adrenergic signaling <a href="https://www.jbc.org/article/S0021-9258(20)75830-8/fulltext"">(Saucerman et al, JBC 2003; Saucerman et al, PBMB 2004)</a>.<br><br>
+
+<h3>Menu items</h3>
+<b>Open Model: </b>open Netflux model file in XLSX format.<br>
+<b>Download Simulation: </b>download timecouse of species activities in CSV format.<br>
+<b>Download as Python: </b>download Python files modelName_run.py, modelName_ODEs.py, and modelName_params.py. This allows you to perform more advanced simulations directly in Python.<br> 
+<b>Download as XGMML: </b>download network visualization in XGMML format, which can by loaded by Cytoscape or other packages.<br>
+<b>Help: </b>this page.<br>
+<b>About: </b>references to source code and papers on Netflux and the underlying modeling approach Logic-Based Differential Equations (LDEs).<br>
 
     <script>
         function toggleMenu() {

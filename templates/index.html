@@ -27,13 +27,14 @@
     <div class="navbar">
         <div class="menu" onclick="toggleMenu()">☰</div>
         <div class="menu-options" id="menu-options">
-            <a href="#" onclick="triggerFileInput();">Open Model</a>
-            <a href="#" onclick="downloadmodel();">Download as Python</a>
-            <a href="#" onclick="downloadxgmml();">Download as XGMML</a>
-            <a href="/help" target="__blank">Help</a>
-            <a href="/about" target="__blank">About</a>
+            <a href="#" onclick="toggleMenu(); triggerFileInput();">Open Model</a>
+            <a href="#" onclick="toggleMenu(); downloadSimulation();">Download Simulation</a>
+            <a href="#" onclick="toggleMenu(); downloadmodel();">Download as Python</a>
+            <a href="#" onclick="toggleMenu(); downloadxgmml();">Download as XGMML</a>
+            <a href="/help" onclick="toggleMenu();" target="__blank">Help</a>
+            <a href="/about" onclick="toggleMenu();" target="__blank">About</a>
         </div>
-        <div><b>Netflux2_alpha2</b></div>
+        <div><b>Netflux2</b></div>
     </div>
     <div class="container">
         <div class="column">
@@ -90,7 +91,6 @@
         
         function triggerFileInput() {
             document.getElementById("fileInput").click();
-            toggleMenu()
         }
             
         function openmodel(default_filename = null) { // default model filename specified in window.onload()
@@ -103,7 +103,7 @@
                 alert("Please select a file first.");
             return;
             } else { // load model from file dialog
-                console.log("loading model from file dialog: ", fileInput.files[0]);
+                console.log("loading model from file"); // " dialog: ", fileInput.files[0]);
                 formData.append("file", fileInput.files[0]);
             }
     
@@ -150,7 +150,9 @@
                     });
                     } 
                     resetparams();
-                    document.getElementById("status").innerText = response.status; // BUG: not updating (need settimeout?)
+                    setTimeout(function() {
+                        document.getElementById("status").innerText = response.status;
+                    }, 1000); // Delay of 1 second due to resetparams
                     console.log("open model")         
  },
                 
@@ -159,7 +161,40 @@
                 }
             });
         }
-                   
+
+        function downloadSimulation() {
+            $.ajax({
+                url: "/downloadSimulation", 
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({}), // Assuming you need to send an empty JSON object
+                success: function(response) {
+                    const filePath = `/uploads/${response.filename}`;
+                    $.ajax({
+                        url: filePath,
+                        type: 'HEAD',
+                        success: function() {
+                            console.log("Simulation file downloading:", filePath); // Log file found
+                            const link = document.createElement('a');
+                            link.href = filePath;
+                            link.download = response.filename; // Use the filename from the response
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            document.getElementById("status").innerText = "Download successful";
+                        },
+                        error: function() {
+                            console.error("File not found:", filePath);
+                            alert("File not found: " + filePath);
+                        }
+                    });
+                },
+                error: function(error) {
+                    console.error("Error saving simulation:", error);
+                }
+            });
+        }                  
+        
         function downloadmodel() {
             $.ajax({
                 url: "/downloadmodel",
@@ -167,7 +202,6 @@
                 contentType: "application/json",
                 data: [],
                 success: function(response) {
-                    toggleMenu();
                     //console.log("Response:", response); // Log the entire response object
                     if (response.filenames) {
                         //console.log("filenames returned to downloadmodel")
@@ -208,7 +242,6 @@
                 contentType: "application/json",
                 data: [],
                 success: function(response) {
-                    toggleMenu();
                     //console.log("Response:", response); // Log the entire response object
                     if (response.filename) {
                         console.log("filename returned from downloadxgmml")
@@ -423,20 +456,19 @@
             });
         }
 
-
         window.onload = function() {
-            console.log("loading webapp")
-            var default_filename = "exampleNet.xlsx";           // automatically load exampleNet from uploads folder
-            //var default_filename= [];                        // don't automatically load a network'
+            console.log("loading webapp");
+            var default_filename = "exampleNet.xlsx"; // automatically load exampleNet from uploads folder
             if (default_filename.length > 0) {
                 openmodel(default_filename);
-                document.getElementById("status").innerText = "Status: exampleNet loaded";
+                //setTimeout(function() {
+                //    document.getElementById("status").innerText = "Status: exampleNet loaded. We appreciate your feedback, see Help.";
+                //}, 1000); // Delay of 1 second
+                console.log("exampleNet loaded")
             } else {
                 document.getElementById("status").innerText = "Status: Open a model";
             }
-  
         };
-
     </script>
 </body>
 </html>
