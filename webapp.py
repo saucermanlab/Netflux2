@@ -95,10 +95,10 @@ def downloadmodel():
         modelName = mymodel.modelName
         print(f"DEBUG/downloadmodel: modelName:{modelName}")
         filenames = [f"{modelName}_ODEs.py", f"{modelName}_run.py", f"{modelName}_params.py"]
-        return jsonify({"status": f"Status: {modelName} exported to uploads folder", "filenames": filenames})
+        return jsonify({"status": f"Status: {modelName} downloading", "filenames": filenames})
         
     except Exception as e:
-        return jsonify({'status': f'Status: Error downloading model: {str(e)}'})
+        return jsonify({'status': f'Status: Error downloading model: py: {str(e)}'})
 
 @app.route('/downloadxgmml', methods=['POST'])
 def downloadxgmml():
@@ -111,7 +111,7 @@ def downloadxgmml():
         model2xgmml.interaction_matrix_to_xgmml(mymodel, export_path=upload_folder)
         #print(f"DEBUG/downloadxgmml: modelName:{modelName}")
         filename = f"{modelName}.xgmml"
-        return jsonify({"status": f"Status: {modelName} XGMML file exported to uploads folder", "filename": filename})
+        return jsonify({"status": f"Status: {modelName} XGMML downloading", "filename": filename})
         
     except Exception as e:
         return jsonify({'status': f'Status: Error downloading XGMML: {str(e)}'})
@@ -153,6 +153,10 @@ def download_file(filename):
     print(f"DEBUG/download_file: serving /uploads/{filename}")
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/library')
+def library():
+    return render_template('library.html')
+
 @app.route('/help')
 def helppage():
     return render_template('help.html')
@@ -181,7 +185,7 @@ def simulate():     # runs when you hit Simulate button
         exec(ODEfuncText, global_namespace, local_namespace)
         global_namespace.update(local_namespace)
         g.ODEfunc = local_namespace['ODEfunc']     
-        print(f"DEBUG/simulate: simulating {g.ODEfunc}")
+        #print(f"DEBUG/simulate: simulating {g.ODEfunc}")
 
         # Either continue or run new simulation
         if 'y' in session: # continue simulation

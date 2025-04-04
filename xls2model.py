@@ -8,7 +8,7 @@
 # reactionParameters contains: w, n, and EC50 parameters
 import numpy as np
 import pandas as pd
-import os
+import os, traceback, re
 
 # internal representation of a Netflux2 model
 class NetfluxModel:
@@ -44,57 +44,80 @@ def createModel(xlsfilename):
     mymodel= NetfluxModel(modelName,speciesIDs,speciesNames,speciesParams,reactionIDs,reactionRules,reactionParams)
     mymodel = createInteractionMatrix(mymodel)
     
-    #print(f"DEBUG/createModel: mymodel: {mymodel}")
-    #print(f"DEBUG/createModel: Species IDs: {mymodel.speciesIDs.tolist()}")
-    #print(f"DEBUG/createModel: Reaction Rules: {mymodel.reactionRules.tolist()}")
+    # Debugging lines
+    # # Display the extracted data
+    # print(f"DEBUG/createModel: mymodel: {mymodel}")
+    # print(f"DEBUG/createModel: Species IDs: {mymodel.speciesIDs.tolist()}")
+    # print(f"DEBUG/createModel: Species Names: {mymodel.speciesNames.tolist()}")
+    # print(f"DEBUG/createModel: Reaction IDs: {mymodel.reactionIDs.tolist()}")
+    # print(f"DEBUG/createModel: Reaction Rules: {mymodel.reactionRules.tolist()}")
+    # print(f"DEBUG/createModel: Interaction Matrix: {mymodel.interactionMatrix.tolist()}")
+    # print(f"DEBUG/createModel: Not Matrix: {mymodel.notMatrix.tolist()}")
     
     return mymodel
 
-def createInteractionMatrix(model):
+def createInteractionMatrix(mymodel):
     # Creates n x m interaction matrix from reactionRules
-    # Called by createModel()
+    # createInteractionMatrix is called by createModel()
     
     # Initialize interaction matrix and not matrix
-    interaction_matrix = np.zeros((len(model.speciesIDs), len(model.reactionRules)))
-    not_matrix = np.zeros((len(model.speciesIDs), len(model.reactionRules)))
-
-    # Fill interaction matrix
-    for i, rule in enumerate(model.reactionRules, start=1):
-        #print(f"DEBUG/createInteractionMatrix: reaction:{rule}")
-        reactants, product = rule.split('=>') # only 1 product allowed
-        reactants = reactants.split('&')
-        #print(f"DEBUG/createInteractionMatrix: reactants:{reactants}") # parsing problems here sometimes caused by use of "+" instead of "&"
-        
-        for reactant in reactants:
-            reactant = reactant.strip()
-            if reactant:
-                #print(f"DEBUG/createInteractionMatrix: reactant:{reactant}")
-                reactantID = model.speciesIDs.index[model.speciesIDs == reactant.strip('!')][0] # remove ! for inhibiting reactants (FIXME: prolbem if there is no element 0?)
-                if '!' in reactant:
-                    not_matrix[reactantID-1, i-1] = 1 # reactant is inhibiting
-                interaction_matrix[reactantID-1, i-1] = -1  # add reactant; subtracting because indexing on species and rules starts at 1
-        
-        product = product.strip()
-        if product:
-#            print(['product:',product]) # FOR DEBUG
-            productID = model.speciesIDs.index[model.speciesIDs == product][0]
-            interaction_matrix[productID-1, i-1] = 1  # add product
+    speciesIDs = mymodel.speciesIDs.tolist()
+    reactionRules = mymodel.reactionRules.tolist()
+    interaction_matrix = np.zeros((len(speciesIDs), len(reactionRules)))
+    not_matrix = np.zeros((len(speciesIDs), len(reactionRules)))
+    try:
+        # Fill interaction matrix
+        for i, rule in enumerate(reactionRules, start=0):
+            #print(f"DEBUG/createInteractionMatrix: reaction:{rule}")
+            reactants, product = rule.split('=>') # only 1 product allowed
+            reactants = re.split(r'&|AND', reactants) # OLD CODE: reactants.split('&')
+            #print(f"DEBUG/createInteractionMatrix: reactants:{reactants}") # parsing problems here sometimes caused by use of "+" instead of "&"
+            
+            for reactant in reactants:
+                reactant = reactant.strip()
+                if reactant:
+                    reactantNum = speciesIDs.index(reactant.replace('NOT_', '').strip('!')) # UNTESTED; OLD CODE: reactant.strip('!')
+                    #print(f"DEBUG/createInteractionMatrix: reactantNum:{reactantNum}, reactant:{reactant}")
+                    if '!' in reactant or 'NOT_' in reactant: # BUG: 'NOT ' is UNTESTED
+                        not_matrix[reactantNum, i] = 1 # reactant is inhibiting
+                    interaction_matrix[reactantNum, i] = -1  # add reactant
+            
+            product = product.strip()
+            if product:
+                #print(f"DEBUG/createInteractionMatrix: product: {product}")
+                productNum = speciesIDs.index(product)
+                interaction_matrix[productNum, i] = 1  # add product
+            #print(f"DEBUG/xls2model/createInteractionMatrix: reaction {rule}, reactant:{reactant}, product:{product}")
     
-    model.interactionMatrix = interaction_matrix
-    model.notMatrix = not_matrix
+    except (IndexError, TypeError) as e:
+        lineno = traceback.extract_tb(e.__traceback__)[-1].lineno
+        print(f"Error in xls2model.createInteractionMatrix on line {lineno}: :{e}")
+        print(f"Error reading reaction {rule}, reactant:{reactant}, product:{product}")
+        print("Check if reactants and products are listed in species tab.")
+        raise
     
-    return model
+    mymodel.interactionMatrix = interaction_matrix
+    mymodel.notMatrix = not_matrix
+    return mymodel
+    
+# for debugging xls2model.createInteractionMatrix in isolation
+if __name__ == "__main__":
 
-#mymodel = createModel('exampleNet.xlsx') // TEMP when testing
+    # testing with model: ['A & B => C', 'B => A']
+    # current error on line 80
+    mymodel = NetfluxModel("net",[],[],[],[],[],[])
+    mymodel.speciesIDs = np.array(['A','B','C'])
+    #mymodel.reactionRules = np.array(['A & B => C', 'B => A'])
+    mymodel.reactionRules = np.array(['A AND NOT_B => C', 'B => A'])
+    mymodel = createInteractionMatrix(mymodel)
+    
+    # testing with exampleNet
+    #mymodel = createModel('exampleNet.xlsx') # testing
+    
+    print(f"interactionMatrix: {mymodel.interactionMatrix}")
+    print(f"notMatrix: {mymodel.notMatrix}")
 
-# Debugging lines
-# # Display the extracted data
-# print(f"DEBUG/createModel: mymodel: {mymodel}")
-# print(f"DEBUG/createModel: Species IDs: {mymodel.speciesIDs.tolist()}")
-# print(f"DEBUG/createModel: Species Names: {mymodel.speciesNames.tolist()}")
-# print(f"DEBUG/createModel: Reaction IDs: {mymodel.reactionIDs.tolist()}")
-# print(f"DEBUG/createModel: Reaction Rules: {mymodel.reactionRules.tolist()}")
-# print(f"DEBUG/createModel: Interaction Matrix: {mymodel.interactionMatrix.tolist()}")
-# print(f"DEBUG/createModel: Not Matrix: {mymodel.notMatrix.tolist()}")
+
+
 
 

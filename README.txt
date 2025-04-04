@@ -14,11 +14,19 @@ or pip3 install Flask-sesssion to get 0.8
 exampleNet.xls: example Netflux model
 exampleNet_test.py: shows how to load Netflux model, run in write or interactive mode
 xls2model.py
-    Loads Netflux model (xls file format)
+    Loads Netflux model (xlsx file format)
     class LDEModel, with attributes speciesNames, ....
     createModel(xlsfilename) returns an LDEModel called mymodel
     createInteractionMatrix(model) adds interaction_matrix and not_matrix to model
-    mymodel = createModel('exampleNet.xlsx') # is hard-coded currently
+    Error handling:
+        runs hard-coded models if xls2model.py is run directly
+            BUG: these models aren't working yet
+        try/catch around reactants/products not found in speciesIDs (line 72, 80)
+            BUG: still need to elevate the error to webapp
+    Updated syntax:
+        Allows A & !B =>C as well as A AND NOT_B => C
+        should this be "NOT B" instead of "NOT_B"? Easy to convert internally
+        Allow for both "=>" and "->"?
 model2PythonODE.py
     writeModel(model) calls writeParamsFile, writeRunFile, writeODEfile
     writeParamsFile writes modelName_params.py
@@ -71,7 +79,7 @@ Represent OR gates as separate reactions on separate lines, e.g. 'A => C','B => 
 Inhibition '!' is used only for reactants.
 
 To do:
-Cleanup- clear ploads directory at start, clear flask session data
+Cleanup- clear uploads directory at start, clear flask session data
 Error handling
 More work needed on model2xgmml.py
 
@@ -91,3 +99,15 @@ print(f"DEBUG/updateReactionParams: updated reaction: {selectedReaction}, w: {w}
 - server-side session variables with flask_session
 - Flask g for "thread global" variables- used for ODEfunc handle
 
+Error handling:
+handling errors in xls2model planned: need to elevate errors to GUI
+    allow AND and NOT_ instead of & and !; line 65, line 72
+    
+Model library:
+# Specify the directory
+directory = 'models'
+
+# Get a list of .xlsx files in the directory
+xlsx_files = [f for f in os.listdir(directory) if f.endswith('.xlsx')]
+
+print(xlsx_files)
