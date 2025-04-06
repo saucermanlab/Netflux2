@@ -19,15 +19,15 @@
         label { width: 142px }
         input {width: 142px}
         select { width: 150px }
-        #variables { height: 140px;
-}
+        #variables { height: 140px;}
     </style>
 </head>
 <body>
     <div class="navbar">
         <div class="menu" onclick="toggleMenu()">☰</div>
         <div class="menu-options" id="menu-options">
-            <a href="#" onclick="toggleMenu(); triggerFileInput();">Open Model</a>
+            <a href="/library" onclick="toggleMenu();" target="__blank">Open Model Library</a>
+            <a href="#" onclick="toggleMenu(); triggerFileInput();">Open Model from Excel</a>    
             <a href="#" onclick="toggleMenu(); downloadSimulation();">Download Simulation</a>
             <a href="#" onclick="toggleMenu(); downloadmodel();">Download as Python</a>
             <a href="#" onclick="toggleMenu(); downloadxgmml();">Download as XGMML</a>
@@ -74,7 +74,6 @@
         </div>
         <div class="columnWide">
             <h3>Plot</h3>
-            <!-- <img id="plot" src="images/Netflux_logo.png" alt="Simulation Plot" style="width:50%;"> -->
             <img id="plot" src="{{ url_for('static', filename='Netflux_logo.png') }}" alt="Simulation Plot" style="max-width: 400px">
         </div>
     </div>
@@ -92,75 +91,76 @@
         function triggerFileInput() {
             document.getElementById("fileInput").click();
         }
-            
-        function openmodel(default_filename = null) { // default model filename specified in window.onload()
+        
+        function openmodel(selectedModel = null) { // default model filename specified in window.onload()
+            console.log("Running openmodel")
             var formData = new FormData();
             var fileInput = document.getElementById("fileInput");
-            if (default_filename) { // load default model
-                console.log("loading default model: ", default_filename);
-                formData.append("filename", default_filename); // append filename to formData
+            if (selectedModel) { // load selected model (default or from model library)
+                console.log("openmodel: loading model: ", selectedModel); 
+                formData.append("filename", selectedModel); // append filename to formData
             } else if (fileInput.files.length === 0) { // no model specified
                 alert("Please select a file first.");
             return;
             } else { // load model from file dialog
-                console.log("loading model from file"); // " dialog: ", fileInput.files[0]);
+                console.log("loading model from file dialog: ", fileInput.files[0]);
                 formData.append("file", fileInput.files[0]);
             }
-    
-            $.ajax({
-                url: "/openmodel",
-                type: "POST",
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    if (response.variables) {
-                        //console.log("loading variable list")
-                        let select = document.getElementById("variables");
-                        select.innerHTML = ""; // Clear existing options
-                        response.variables.forEach(variable => {
-                        let option = document.createElement("option");
-                        option.value = variable;
-                        option.textContent = variable;
-                        option.selected = true;
-                        select.appendChild(option);
-                        });
-                    }                  
-                    if (response.variables) { 
-                        //console.log("loading species list")
-                        var speciesSelect = document.getElementById("speciesList");
-                        //console.log("speciesSelect:",speciesSelect)
-                        speciesSelect.innerHTML = ""; // Clear existing options
-                        response.variables.forEach(variable => {
-                        var option = document.createElement("option");
-                        option.value = variable;
-                        option.textContent = variable;
-                        speciesSelect.appendChild(option);
-                     });
-                     }               
-                    if (response.reactionRules) {
-                        //console.log("loading reaction list")
-                        var reactionSelect = document.getElementById("reactionList");
-                        reactionSelect.innerHTML = ""; // Clear existing options
-                        response.reactionRules.forEach(reaction => {
-                        var option = document.createElement("option");
-                        option.value = reaction;
-                        option.textContent = reaction;
-                        reactionSelect.appendChild(option);
+           
+           $.ajax({
+               url: "/openmodel",
+               type: "POST",
+               data: formData,
+               processData: false,
+               contentType: false,
+               success: function(response) {
+                   if (response.variables) { // select species to plot
+                       //console.log("loading variable list")
+                       let select = document.getElementById("variables");
+                       select.innerHTML = ""; // Clear existing options
+                       response.variables.forEach(variable => {
+                       let option = document.createElement("option");
+                       option.value = variable;
+                       option.textContent = variable;
+                       option.selected = true;
+                       select.appendChild(option);
+                       });
+                   }        
+                   if (response.variables) { // select species parameters
+                       //console.log("loading species list")
+                       var speciesSelect = document.getElementById("speciesList");
+                       //console.log("speciesSelect:",speciesSelect)
+                       speciesSelect.innerHTML = ""; // Clear existing options
+                       response.variables.forEach(variable => {
+                       var option = document.createElement("option");
+                       option.value = variable;
+                       option.textContent = variable;
+                       speciesSelect.appendChild(option);
                     });
-                    } 
-                    resetparams();
-                    setTimeout(function() {
-                        document.getElementById("status").innerText = response.status;
-                    }, 1000); // Delay of 1 second due to resetparams
-                    console.log("open model")         
- },
-                
-                error: function(error) {
-                    console.error("Error opening model:", error);
-                }
-            });
-        }
+                    }               
+                   if (response.reactionRules) { // select reaction parameters
+                       //console.log("loading reaction list")
+                       var reactionSelect = document.getElementById("reactionList");
+                       reactionSelect.innerHTML = ""; // Clear existing options
+                       response.reactionRules.forEach(reaction => {
+                       var option = document.createElement("option");
+                       option.value = reaction;
+                       option.textContent = reaction;
+                       reactionSelect.appendChild(option);
+                   });
+                   } 
+                   resetparams();
+                   setTimeout(function() {
+                       document.getElementById("status").innerText = response.status;
+                   }, 1000); // Delay of 1 second due to resetparams
+                   console.log("open model")         
+                },
+               
+               error: function(error) {
+                   console.error("Error opening model:", error);
+               }
+           });
+        }     
 
         function downloadSimulation() {
             $.ajax({
@@ -230,7 +230,7 @@
                     }    
                 }, // end of success function
                 error: function(error) {
-                    console.error("Error exporting model:", error);
+                    console.error("Error downloading model: ajax: ", error);
                 }
             });
         } // end of downloadmodel function    
@@ -267,7 +267,7 @@
                     }    
                 }, // end of success function
                 error: function(error) {
-                    console.error("Error exporting model:", error);
+                    console.error("Error downloading XGMML: ajax:", error);
                 }
             });
         } // end of downloadxgmml function
@@ -455,20 +455,46 @@
                 },
             });
         }
-
-        window.onload = function() {
-            console.log("loading webapp");
-            var default_filename = "exampleNet.xlsx"; // automatically load exampleNet from uploads folder
-            if (default_filename.length > 0) {
-                openmodel(default_filename);
-                //setTimeout(function() {
-                //    document.getElementById("status").innerText = "Status: exampleNet loaded. We appreciate your feedback, see Help.";
-                //}, 1000); // Delay of 1 second
-                console.log("exampleNet loaded")
+        
+        function getSelectedModel() {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: "/getSelectedModel",
+                    type: "POST",
+                    contentType: "application/json",
+                    success: function(response) {
+                        let selectedModel = response.selectedModel; 
+                        resolve(selectedModel);
+                        console("getSelectedModel:",selectedModel)
+                    },
+                    error: function(error) {
+                        reject(error);
+                    }
+                });
+            });
+        }
+        
+        // BUG: THIS IS NOT YET TESTED. BUT IF IT WORKS IT LOADS FROM MODEL LIBRARY ON REFRESH
+        window.onload = function() { 
+            // Check if selectedModel exists in the session
+            getSelectedModel().then(selectedModel => {
+            var defaultModel = "exampleNet.xlsx";   // load default model
+            console.log("onload/getSelectedModel: ",selectedModel)
+            if (selectedModel) {
+                openmodel(selectedModel);
+                console.log("onload: loading selected model:", selectedModel);
+            } else if (defaultModel) {
+                openmodel(defaultModel);
+                console.log("onload: loading default model:", defaultModel);
             } else {
                 document.getElementById("status").innerText = "Status: Open a model";
             }
+            }).catch(error => {
+            console.error('Error:', error);
+            document.getElementById("status").innerText = "Status: Open a model";
+            });
         };
+        
     </script>
 </body>
 </html>

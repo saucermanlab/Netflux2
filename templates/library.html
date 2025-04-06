@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Netflux2 - Model Library</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="{{ url_for('static', filename='index.js') }}"></script> <!- code for openmodel is in static/index.js ->
     <style>
-        body { font-family: Arial, sans-serif; }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4}
         .navbar { background-color: black; color: white; padding: 8px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; position: relative}
         .menu { cursor: pointer; }
         .menu-options { display: none; position: absolute; background: white; color: black; top: 40px; left: 10px; padding: 10px; border: 1px solid black; }
@@ -15,6 +17,7 @@
         .column { flex: 1; padding: 20px; background-color: #f4f4f4 }
         .columnWide { flex: 2; padding: 20px; background-color: #f4f4f4 }
         button { margin: 5px 0; padding: 5px 10px; width: 100px; border: none; background-color: #007BFF; color: white; cursor: pointer; }
+        h2 { margin-bottom: 0px; padding: 0;}
     </style>
 </head>
 <body>
@@ -27,15 +30,124 @@
         </div>
         <div><b>Netflux2</b></div>
     </div>
+        <h2>Model Library</h2>
 
+    <div class="container">
 
-<h1>Model Library</h1><br>
-Under development.<br><br>
+        <div class="column">            
+            <label for="modelList"><h3>Models:</h3></label>
+            <select id="modelList" onchange="loadModelInfo()" size="10" style="width: 250px; height: 350px; overflow-y: scroll;">
+                <!-- modelList is populated by loadLibrary() -->
+            </select><br>
+        </div>
 
+        <div class="column">
+            <label for="modelDescription"><h3>Description:</h3></label>
+            <div id="modelDescription" class="scrollable-text-box" style="height: 280px">Select a model</div><br>
+            <button onclick="sendSelectedModel()" style="background-color: red; color: white;">Open model</button> 
+            <button onclick="downloadExcel()" style="width: 150px">Download as Excel</button><br>
+            <label id="status">Status: Select a model</label>
+        </div>
+        
+        <div class="column">
+            <label for="schematic"><h3>Schematic:</h3></label>
+            <img id="schematic" src="{{ url_for('static', filename='Netflux_logo.png') }}" alt="Network schematic" style="max-width: 350px; max-height: 350px">
+        </div>
+            
     <script>
         function toggleMenu() {
             let menu = document.getElementById("menu-options");
             menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+        
+        function loadLibrary() {
+            $.ajax({
+                url: '/loadLibrary',
+                type: 'GET',
+                success: function(models) {
+                    console.log("loading library with models: ",models);
+                    var modelList = $('#modelList');
+                    modelList.empty();
+                    models.forEach(function(model) {
+                        console.log('new item: ', new Option(model, model));
+                        modelList.append(new Option(model, model));
+                    });
+                },
+                error: function(error) {
+                    console.log("Error loading library:", error);
+                    document.getElementById("status").innerText = error;
+                }
+            });
+        }
+        
+        function loadModelInfo() {
+            var selectedModel = document.getElementById("modelList").value;
+            var data = {
+                selectedModel: selectedModel
+            };
+            
+            $.ajax({
+                url: "/getModelInfo",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function(response) {
+                    document.getElementById("modelDescription").innerHTML = response.description;
+                    document.getElementById("schematic").src = response.imagepath;
+                    document.getElementById("status").innerText = "Status: Description loaded";
+                },
+                error: function(error) {
+                    console.log("Error loading model description:", error);
+                    document.getElementById("status").innerText = error;
+                }
+            });
+        }
+        
+        function sendSelectedModel() { // stores name of selectedModel in session var, gets opened by index.html/onload
+            var data = {
+                selectedModel: `${document.getElementById("modelList").value}.xlsx`    // Assuming the file extension is .xlsx
+            };
+            $.ajax({
+                url: "/sendSelectedModel",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function(response) {
+                    console.log("sendSelectedModel: ", response.status); 
+                    document.getElementById("status").innerText = response.status;
+                },
+                error: function(error) {
+                    document.getElementById("status").innerText = error;
+                }
+            });
+        }
+        
+        function downloadExcel() {
+            var selectedModel = document.getElementById("modelList").value;
+            const filePath = `/models/${selectedModel}.xlsx`; // Assuming the file extension is .xlsx
+            console.log('downloading Excel: ', filePath);
+            $.ajax({
+                url: filePath,
+                type: 'HEAD',
+                success: function() {
+                    console.log("Excel file downloading:", filePath); // Log file found
+                    const link = document.createElement('a');
+                    link.href = filePath;
+                    link.download = selectedModel + '.xlsx'; // Use the selectedModel as the filename
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    document.getElementById("status").innerText = "Status: Model downloading";
+                },
+                error: function() {
+                    console.error("File not found:", filePath);
+                    alert("File not found: " + filePath);
+                }
+            });
+        }
+                
+        window.onload = function() {
+            loadLibrary();
         }
     </script>
 

@@ -19,14 +19,11 @@ xls2model.py
     createModel(xlsfilename) returns an LDEModel called mymodel
     createInteractionMatrix(model) adds interaction_matrix and not_matrix to model
     Error handling:
-        runs hard-coded models if xls2model.py is run directly
-            BUG: these models aren't working yet
+        runs hard-coded models at bottom of xls2model.py if it is run directly
         try/catch around reactants/products not found in speciesIDs (line 72, 80)
             BUG: still need to elevate the error to webapp
     Updated syntax:
-        Allows A & !B =>C as well as A AND NOT_B => C
-        should this be "NOT B" instead of "NOT_B"? Easy to convert internally
-        Allow for both "=>" and "->"?
+        Allows Netflux1 syntax: A & !B =>C as well as new Netflux2 syntax: A AND NOT B -> C
 model2PythonODE.py
     writeModel(model) calls writeParamsFile, writeRunFile, writeODEfile
     writeParamsFile writes modelName_params.py
@@ -55,6 +52,10 @@ webapp.py
     updateReactionParams() runs when you change a reaction parameter value, updates reactionParams
     getSelectedSpeciesParams() runs when you select a different species, updates fields for y0/ymax/tau 
     getSelectedReactionParams() runs when you select a different reaction, updates fields for w/ec50/n
+    loadLibrary() loads library.xls into "library", which is stored as a session var
+    getModelInfo() gets the description for the selectedModel from library
+    sendSelectedModel() stores the name of selectedModel from library, stores as sesssion var
+    getSelectedModel() gets the name of selectedModel from library
 index.html
     style parameters
     navbar, including toggleMenu(): openmodel(), help(), about()
@@ -71,7 +72,7 @@ Hosting on pythonanywhere.com
         I had to put the 'uploads' and 'models' folders directly under "netflux"
         in console: pip3 install Flask-session
 
-Netflux file formatting errors:
+Common Netflux file formatting errors:
 Should start input reaction as '=> A'
 Single space separating variables or operators
 Represent AND gates with '&'. Use of '+' is deprecated.
@@ -82,12 +83,13 @@ To do:
 Cleanup- clear uploads directory at start, clear flask session data
 Error handling
 More work needed on model2xgmml.py
+get cardiacdevnet xls
+more bug testing with library, loading models
 
 Planned features:
-Update XGMML if given a previous one
+Update XGMML if given a previous one (from code, not in GUI)
 Cytoscape integration?
-Model library
-Include more advanced codes for sensitivity analysis,  validation, parameter estimation?
+Will keep advanced codes for sensitivity analysis,  validation, parameter estimation in logicDE
 
 Flask programming tips:
 - Copilot very helpful
@@ -95,19 +97,16 @@ Flask programming tips:
 - convert numpy arrays to lists with .tolist()
 - Spyder can't debug Flask, so I use lots of print statements:
 print(f"DEBUG/updateReactionParams: updated reaction: {selectedReaction}, w: {w}, ec50: {ec50}, n: {n}")
-- session variables with session
+- session variables with session. Use these to pass vars between functions and pages
 - server-side session variables with flask_session
 - Flask g for "thread global" variables- used for ODEfunc handle
 
-Error handling:
-handling errors in xls2model planned: need to elevate errors to GUI
-    allow AND and NOT_ instead of & and !; line 65, line 72
-    
 Model library:
-# Specify the directory
-directory = 'models'
+4/6/2025 JS
+moved openmodel to index.js, made global so it could be accessed by library.html. But maybe
+there's a better way to open from library.html.
+Currently it can load models and shows parameters but doesn't show the variable list
 
-# Get a list of .xlsx files in the directory
-xlsx_files = [f for f in os.listdir(directory) if f.endswith('.xlsx')]
-
-print(xlsx_files)
+How to open model from library:
+1) when you hit open, load the filename into session var selectedModel (via sendSelectedModel()))
+2) adjust openmodel so that it uses selectedModel from session

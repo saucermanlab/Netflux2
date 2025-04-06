@@ -34,12 +34,12 @@ def index():
 
 @app.route('/openmodel', methods=['GET','POST'])
 def openmodel():   
-    print("Starting openmodel")    
+    #print("Starting openmodel")    
     try:
         if request.method == 'POST':
             if 'filename' in request.form:  # Check if default_filename is in form data
                 filename = request.form['filename']
-                print(f"DEBUG:openmodel filename:{filename}")
+                #print(f"DEBUG:openmodel filename:{filename}")
                 filepath = os.path.join(app.config['MODELS_FOLDER'], filename)
                 #print(f"DEBUG:openmodel filepath:{filepath}")
             elif 'file' in request.files:  # Check if file is uploaded via file dialog
@@ -49,7 +49,7 @@ def openmodel():
                 filename = file.filename
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
-                print(f"{filename} send to uploads folder")
+                #print(f"{filename} sent to uploads folder")
             else:
                 return jsonify({"status": "Error: No file uploaded"}), 400
     
@@ -57,7 +57,7 @@ def openmodel():
         print(f"DEBUG/openmodel: filepath:{filepath}")
         mymodel = xls2model.createModel(filepath)
         modelName = mymodel.modelName
-        print(f"DEBUG/openmodel: mymodel: {mymodel}")
+        #print(f"DEBUG/openmodel: mymodel: {mymodel}")
         ODEfuncText = model2PythonODE.generateODEfile(mymodel)
         #print(f"DEBUG/openmodel: ODEfuncText: {ODEfuncText}")
         session.clear()
@@ -75,9 +75,9 @@ def openmodel():
         #print(f"DEBUG/openmodel: speciesIDs:{speciesIDs}")
         #print(f"DEBUG/openmodel: reactionRules: {reactionRules}")
         return jsonify({"status": f"Status: Model {modelName} opened", "variables": speciesIDs, "reactionRules": reactionRules})
-    except Exception as e:
-        print(f"DEBUG/openmodel: Exception: {e}")
-        return jsonify({'status': f'Status: Error opening model: {str(e)}'}) 
+    except Exception as e: # handles all types of Exceptions
+        print(f"DEBUG/openmodel: {type(e).__name__}: {e}") # tells you the type of Exception
+        return jsonify({'status': f'Status: Error opening model: {type(e).__name__}:{str(e)}'}) 
     return jsonify({"status": "Error processing file"}), 500
 
 @app.route('/downloadmodel', methods=['POST'])
@@ -124,25 +124,22 @@ def downloadSimulation():
         mymodel = session.get('NetfluxModel',[])
         modelName = mymodel.modelName
         speciesIDs = mymodel.speciesIDs.tolist()
-        print(f"DEBUG/downloadSimulation: speciesIDs:{speciesIDs}")
+        #print(f"DEBUG/downloadSimulation: speciesIDs:{speciesIDs}")
         t = np.array(session.get('t', [])) # session variable
         y = np.array(session.get('y', [])).T # transpose so it matches shape of t
         
         if t.size == 0 or y.size == 0:
             raise ValueError("t or y arrays are empty")
-        print(f"DEBUG/downloadSimulation: y: {y}")
-        print(f"DEBUG/downloadSimulation: y.shape: {y.shape}")
+        #print(f"DEBUG/downloadSimulation: y: {y}")
+        #print(f"DEBUG/downloadSimulation: y.shape: {y.shape}")
         
         df = pd.DataFrame(t, columns=['t'])
         for i, species in enumerate(speciesIDs):
             df[species] = y[:, i]
-        print(f"DEBUG/downloadSimulation: df: {df}")
+        #print(f"DEBUG/downloadSimulation: df: {df}")
         filename = f"{modelName}_simulation.csv"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         df.to_csv(filepath, index=False)
-        # if os.path.exists(filepath):
-        #     print(f"DataFrame successfully written to {filepath}")
-
         return jsonify({"status": f"Status: {filename} exported to uploads folder", "filename": filename})
         
     except Exception as e:
@@ -150,8 +147,13 @@ def downloadSimulation():
 
 @app.route('/uploads/<filename>')
 def download_file(filename):
-    print(f"DEBUG/download_file: serving /uploads/{filename}")
+    #print(f"DEBUG/download_file: serving /uploads/{filename}")
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/models/<filename>')
+def serve_model(filename):
+    #print(f"DEBUG/download_file: serving /models/{filename}")
+    return send_from_directory(app.config['MODELS_FOLDER'], filename)
 
 @app.route('/library')
 def library():
@@ -339,6 +341,59 @@ def getSelectedReactionParams(): # when you change which parameter is selected, 
     w, n, ec50 = reactionParams[pos,0], reactionParams[pos,1], reactionParams[pos,2] 
     #print(f"DEBUG/getSelectedReactionParams w:{w}, n:{n}, ec50:{ec50}")
     return jsonify({'status': 'Status: Updated reaction parameters', 'w':w, 'n':n, 'ec50':ec50})
+
+# ------------------- Model Library ---------------------
+
+@app.route('/loadLibrary', methods=['GET'])
+def loadLibrary():
+    try:
+        # Load the Excel file
+        filepath = os.path.join(app.config['MODELS_FOLDER'], 'library.xlsx')
+        library = pd.read_excel(filepath)
+        session['library'] = library
+        # Extract the model names (assuming they are in the first column)
+        modelList = library.iloc[:, 0].tolist()  
+        print(f"DEBUG/loadLibrary: modelList:{modelList}")
+        return jsonify(modelList)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/getModelInfo', methods=['POST'])
+def getModelInfo():
+    try:
+        data = request.get_json()
+        selectedModel = data['selectedModel']
+        print(f"DEBUG/getModelInfo: selectedModel: {selectedModel}")
+        library = session.get('library',[])
+        row = library[library.iloc[:, 0] == selectedModel]       
+        description = row.iloc[0, 1]
+        imageName = row.iloc[0, 2] 
+        imagepath = os.path.join(app.config['MODELS_FOLDER'], imageName)
+        #print(f"description: {description}")
+        #print(f"imageName: {imageName}")
+        return jsonify({'selectedModel': selectedModel, 'description': description,'imagepath': imagepath})
+    except Exception as e:
+        return jsonify({'description': f'Model description could not be loaded. Error: {e}', 'imagepath': ''}), 500
+
+@app.route('/sendSelectedModel', methods=['POST'])
+def sendSelectedModel():
+        try:
+            data = request.get_json()
+            selectedModel = data['selectedModel']
+            print(f"DEBUG/sendSelectedModel: selectedModel: {selectedModel}")
+            session['selectedModel'] = selectedModel
+            
+            # actual opening is done by index.html/window.onload() to openmodel()
+            return jsonify({'status': f'Status: Opening {selectedModel}'})
+        except Exception as e:
+            return jsonify({'status': f'Error: {e}'})
+
+# This function could be generalized? Not sure it's needed though.
+@app.route('/getSelectedModel', methods=['POST'])
+def getSelectedModel():
+    selectedModel = session.get('selectedModel', None)
+    print(f"DEBUG/getSelectedModel: selectedModel:{selectedModel}")
+    return jsonify({'selectedModel': selectedModel})
 
 # So that it will run in Spyder
 if __name__ == "__main__":
