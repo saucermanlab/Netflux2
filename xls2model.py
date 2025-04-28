@@ -31,6 +31,7 @@ def createModel(xlsfilename):
         speciesIDs = species_df.iloc[1:, 1].str.strip()  # Species ID in column B
         speciesNames = species_df.iloc[1:, 2]  # Species Name in column C
         speciesParams = species_df.iloc[1:, 3:6] # Y0, Ymax, tau parameters
+        #print(f"speciesIDs:{speciesIDs}, speciesNames:{speciesNames}, speciesParams:{speciesParams}")
         
         # Read the reactions sheet
         reactions_df = pd.read_excel(xlsfilename, sheet_name='reactions')
@@ -39,6 +40,7 @@ def createModel(xlsfilename):
         reactionIDs = reactions_df.iloc[1:, 1]  # Start Row 2, Column B
         reactionRules = reactions_df.iloc[1:, 2]  # Start Row 2, Column C
         reactionParams = reactions_df.iloc[1:,3:6] # w, n, and EC50 parameters
+        #print(f"reactionIDs:{reactionIDs}, reactionRules:{reactionRules}, reactionParams:{reactionParams}")
         
         modelName = os.path.basename(xlsfilename).strip('.xlsx')
         mymodel= NetfluxModel(modelName,speciesIDs,speciesNames,speciesParams,reactionIDs,reactionRules,reactionParams)
@@ -49,6 +51,7 @@ def createModel(xlsfilename):
         raise
     try:  
         mymodel = createInteractionMatrix(mymodel)
+        #print(f"xls2model/createModel: interaction_matrix: {mymodel.interactionMatrix}")
     except Exception as e:  
         print(f"Error in calling xls2model.createModel calling createInteractionMatrix: {e}") # captures errors raised in createInteractionMatrix
         raise
@@ -112,8 +115,10 @@ def createInteractionMatrix(mymodel):
         error_message = f"{type(e).__name__} reading reaction {reactionIDs[i]}:{rule}, reactant:{reactant}, product:{product}. "
         raise Exception(error_message) from e
     
+    #print(f"createInteractionMatrix: {interaction_matrix}")
     mymodel.interactionMatrix = interaction_matrix
     mymodel.notMatrix = not_matrix
+    #print("DEBUG: at bottom of createInteractionMatrix")
     return mymodel
     
 # for debugging xls2model.createInteractionMatrix in isolation

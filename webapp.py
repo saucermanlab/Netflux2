@@ -1,4 +1,4 @@
-# webapp.py: Netflux2 web app
+# webapp.py: Netflux (v2) web app
 # Jeff Saucerman 3/2025
 # Last updated 3/29/2025 JS: functional with exampleNet
 # Requires: flask, flask-session >=0.6, numpy, matplotlib, scipy, lorenz
@@ -54,22 +54,23 @@ def openmodel():
                 return jsonify({"status": "Error: No file uploaded"}), 400
     
         # Generate model and parameters
-        print(f"DEBUG/openmodel: filepath:{filepath}")
+        #print(f"DEBUG/openmodel: filepath: {filepath}")
         mymodel = xls2model.createModel(filepath)
-        modelName = mymodel.modelName
         #print(f"DEBUG/openmodel: mymodel: {mymodel}")
+        modelName = mymodel.modelName
+        #print(f"DEBUG/openmodel modelName:{modelName}")
         ODEfuncText = model2PythonODE.generateODEfile(mymodel)
         #print(f"DEBUG/openmodel: ODEfuncText: {ODEfuncText}")
+        speciesIDs = mymodel.speciesIDs.tolist()  
+        reactionRules = mymodel.reactionRules.tolist()
+        #print(f"DEBUG/openmodel: speciesParams:{mymodel.speciesParams}")
+        #print(f"DEBUG/openmodel: reactionParams: {mymodel.reactionParams}")
+                       
         session.clear()
         session['NetfluxModel'] = mymodel
         session['reactionParams'] = mymodel.reactionParams
         session['speciesParams'] = mymodel.speciesParams
-        #print(f"DEBUG/openmodel: speciesParams:{mymodel.speciesParams}")
-        #print(f"DEBUG/openmodel: reactionParams: {mymodel.reactionParams}")
         session['ODEfuncText'] = ODEfuncText
-            
-        speciesIDs = mymodel.speciesIDs.tolist()  
-        reactionRules = mymodel.reactionRules.tolist()
         session['speciesIDs'] = speciesIDs
         session['reactionRules'] = reactionRules
         #print(f"DEBUG/openmodel: speciesIDs:{speciesIDs}")
@@ -78,7 +79,6 @@ def openmodel():
     except Exception as e: # handles all types of Exceptions
         print(f"DEBUG/openmodel: {type(e).__name__}: {e}") # tells you the type of Exception
         return jsonify({'status': f'Status: Error opening model: {type(e).__name__}:{str(e)}'}) 
-    return jsonify({"status": "Error processing file"}), 500
 
 @app.route('/downloadmodel', methods=['POST'])
 def downloadmodel():
@@ -253,7 +253,7 @@ def replot():     # runs when you click Plot button
 
 @app.route('/resetparams', methods=['POST'])
 def resetparams():  # runs when you click Reset Parameters
-    print("DEBUG: starting resetparams()")
+    #print("DEBUG: starting resetparams()")
     mymodel = session.get('NetfluxModel',[])
     speciesIDs = mymodel.speciesIDs.tolist()
     reactionRules = mymodel.reactionRules.tolist()
@@ -392,7 +392,7 @@ def sendSelectedModel():
 @app.route('/getSelectedModel', methods=['POST'])
 def getSelectedModel():
     selectedModel = session.get('selectedModel', None)
-    print(f"DEBUG/getSelectedModel: selectedModel:{selectedModel}")
+    #print(f"DEBUG/getSelectedModel: selectedModel:{selectedModel}")
     return jsonify({'selectedModel': selectedModel})
 
 # So that it will run in Spyder

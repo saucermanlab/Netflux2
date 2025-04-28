@@ -1,4 +1,4 @@
-Netflux2 development notes
+Netflux (v2) development notes
 Updated 3/30/2025, version: alpha2
 by Jeff Saucerman
 
@@ -6,7 +6,7 @@ version alpha2: export models in Python or XGMML formats, simulation CSV, error 
 version alpha1: functional webapp, loads models, runs simulations, runs on 
     PythonAnywhere at netflux.pythonanywhere.com
 
-Netflux2 requires installation of:
+Netflux (v2) requires installation of:
 flask, flask-session >=0.6, numpy, matplotlib, scipy
 Install flask-session with: conda install conda-forge::flask-session to get v0.6
 or pip3 install Flask-sesssion to get 0.8
@@ -23,7 +23,7 @@ xls2model.py
         try/catch around reactants/products not found in speciesIDs (line 72, 80)
             BUG: still need to elevate the error to webapp
     Updated syntax:
-        Allows Netflux1 syntax: A & !B =>C as well as new Netflux2 syntax: A AND NOT B -> C
+        Allows Netflux(v1) syntax: A & !B =>C as well as new Netflux(v2) syntax: A AND NOT B -> C
 model2PythonODE.py
     writeModel(model) calls writeParamsFile, writeRunFile, writeODEfile
     writeParamsFile writes modelName_params.py
@@ -67,6 +67,8 @@ index.html
     species parameter fields y0, ymax, tau. updating calls updateSpeciesParams() 
     reaction parameter select: changing this calls getSelectedReactionParams()
     reaction parameter fields w, ec50, n. updating calls updateReactionParams()
+library.html
+    <add here>
 Hosting on pythonanywhere.com
         It's working!
         I had to put the 'uploads' and 'models' folders directly under "netflux"
@@ -78,13 +80,14 @@ Single space separating variables or operators
 Represent AND gates with '&'. Use of '+' is deprecated.
 Represent OR gates as separate reactions on separate lines, e.g. 'A => C','B => C'
 Inhibition '!' is used only for reactants.
+If there are no reactions going to a species, we put a 0.
 
 To do:
+Support missing input reactions to a species
 Cleanup- clear uploads directory at start, clear flask session data
 Error handling
-More work needed on model2xgmml.py
-get cardiacdevnet xls
-more bug testing with library, loading models
+More work needed on model2xgmml.py for formatting, style files
+more bug testing with model library, loading additional models
 
 Planned features:
 Update XGMML if given a previous one (from code, not in GUI)
@@ -100,13 +103,3 @@ print(f"DEBUG/updateReactionParams: updated reaction: {selectedReaction}, w: {w}
 - session variables with session. Use these to pass vars between functions and pages
 - server-side session variables with flask_session
 - Flask g for "thread global" variables- used for ODEfunc handle
-
-Model library:
-4/6/2025 JS
-moved openmodel to index.js, made global so it could be accessed by library.html. But maybe
-there's a better way to open from library.html.
-Currently it can load models and shows parameters but doesn't show the variable list
-
-How to open model from library:
-1) when you hit open, load the filename into session var selectedModel (via sendSelectedModel()))
-2) adjust openmodel so that it uses selectedModel from session
