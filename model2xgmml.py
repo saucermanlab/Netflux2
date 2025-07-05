@@ -1,6 +1,7 @@
 # model2xgmml.py:
 # This file obtains intMat and notMat from my model and converts to XGMML
 # Jeff Saucerman 3/30/2025
+# JS 7/4/2025 to add activates/inhibits labels
 
 import xml.etree.ElementTree as ET
 import os
@@ -33,7 +34,7 @@ def interaction_matrix_to_xgmml(mymodel, export_path=[]):
                 reactants.append(speciesIDs[i])
             elif interactionMatrix[i, j] == 1:
                 products.append(speciesIDs[i]) # DEBUG, ERROR HERE
-            if notMatrix[i, j] == -1:
+            if notMatrix[i, j] == 1:
                 inhibitors.append(speciesIDs[i])
         
         # Create product nodes
@@ -54,9 +55,12 @@ def interaction_matrix_to_xgmml(mymodel, export_path=[]):
                     nodes[reactant] = node
                 
                 edge = ET.SubElement(root, "edge", attrib={"source": reactant, "target": and_node_id})
+                ET.SubElement(edge, "att", attrib={"name": "label", "value": "activates"})
             
             for product in products:
                 edge = ET.SubElement(root, "edge", attrib={"source": and_node_id, "target": product})
+                ET.SubElement(edge, "att", attrib={"name": "label", "value": "activates"})
+
         else:
             for reactant in reactants:
                 if reactant not in nodes:
@@ -65,6 +69,8 @@ def interaction_matrix_to_xgmml(mymodel, export_path=[]):
                 
                 for product in products:
                     edge = ET.SubElement(root, "edge", attrib={"source": reactant, "target": product})
+                    ET.SubElement(edge, "att", attrib={"name": "label", "value": "activates"})
+
         
         # Create inhibitor nodes and edges
         for inhibitor in inhibitors:
@@ -73,7 +79,9 @@ def interaction_matrix_to_xgmml(mymodel, export_path=[]):
                 nodes[inhibitor] = node
             
             for product in products:
-                edge = ET.SubElement(root, "edge", attrib={"source": inhibitor, "target": product, "label": "inhibits"})
+                edge = ET.SubElement(root, "edge", attrib={"source": inhibitor, "target": product})
+                ET.SubElement(edge, "att", attrib={"name": "label", "value": "inhibits"})
+    
     
     # Convert the XML tree to a string
     xgmml_string = ET.tostring(root).decode()
@@ -90,6 +98,7 @@ def interaction_matrix_to_xgmml(mymodel, export_path=[]):
         f.write(xgmml_string)
         print(f"model2xgmml: written to {filename}")
         
-# # TESTING                   
+# # TESTING
+# import xls2model                   
 # mymodel = xls2model.createModel("exampleNet.xlsx")
-# interaction_matrix_to_xgmml(mymodel, "test_network.xgmml")
+# interaction_matrix_to_xgmml(mymodel)

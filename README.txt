@@ -34,8 +34,8 @@ model2PythonODE.py
         nestedOR nests reactions for OR gates
         returnUtilityFunctions contains the code for act/inhib/AND/OR
 model2xgmml.py
-    interaction_matrix_to_xgmml(model) writes network in XGMML format. Not yet tested
-    in Cytoscape and likely needs further work.
+    interaction_matrix_to_xgmml(model) writes network in XGMML format. Now generates
+    XGMML files that work in Cytoscape with style file "Netflux2 Cytoscape style.xml".
 webapp.py 
     Web interface similar to the original Netflux
     Currently it loads exampleNet, can run complex simulations, replot
