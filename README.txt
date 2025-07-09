@@ -68,9 +68,8 @@ index.html
     reaction parameter select: changing this calls getSelectedReactionParams()
     reaction parameter fields w, ec50, n. updating calls updateReactionParams()
 library.html
-    <add here>
+    browse pre-loaded models, open them in Netflux
 Hosting on pythonanywhere.com
-        It's working!
         I had to put the 'uploads' and 'models' folders directly under "netflux"
         in console: pip3 install Flask-session
 
@@ -86,7 +85,6 @@ To do:
 Support missing input reactions to a species
 Cleanup- clear uploads directory at start, clear flask session data
 Error handling
-More work needed on model2xgmml.py for formatting, style files
 more bug testing with model library, loading additional models
 
 Planned features:

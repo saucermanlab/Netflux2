@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Netflux2 - Help</title>
+    <title>Netflux - Help</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; }
@@ -21,14 +21,14 @@
     <div class="navbar">
         <div class="menu" onclick="toggleMenu()">☰</div>
         <div class="menu-options" id="menu-options">
-            <a href="/">Netflux2</a>
+            <a href="/">Netflux</a>
             <a href="/about">About</a>
         </div>
-        <div><b>Netflux2</b></div>
+        <div><b>Netflux</b></div>
     </div>
 
 <h1>Help</h1><br>
-Netflux2(version alpha3, 4/06/2025) is under development. We appreciate your feedback by submitting this <a href="https://forms.gle/iYwcQBEwGcLCygzv9">brief survey.</a><br><br>
+Netflux (v1.9(alpha), 4/06/2025) is under development. We appreciate your feedback by submitting this <a href="https://forms.gle/iYwcQBEwGcLCygzv9">brief survey.</a><br><br>
 
 You are also welcome to email Jeff Saucerman at jsaucerman@virginia.edu if you find bugs or have suggestions.<br><br>
 
@@ -42,12 +42,13 @@ Video tutorials are available on <a href="https://www.youtube.com/watch?v=tU2gU8
 <b>Open Model from Excel: </b>open Netflux model file in XLSX format.<br>
 <b>Download Simulation: </b>download timecouse of species activities in CSV format.<br>
 <b>Download as Python: </b>download Python files modelName_run.py, modelName_ODEs.py, and modelName_params.py. This allows you to perform more advanced simulations directly in Python.<br> 
-<b>Download as XGMML: </b>download network visualization in XGMML format, which can by loaded by Cytoscape or other packages.<br>
+<b>Download as XGMML: </b>download network visualization in XGMML format, which can by loaded by Cytoscape or other packages. For Cytoscape, we recommend this 
+<a href="{{ url_for('static', filename='Netflux2 Cytoscape style.xml') }}" download>Cytoscape style file</a>.<br>
 <b>Help: </b>this page.<br>
 <b>About: </b>references to source code and papers on Netflux and the underlying modeling approach Logic-Based Differential Equations (LDEs).<br>
 
 <h3>Running basic simulations</h3>
-Netflux2 automatically loads exampleNet. You can then run basic simulations using the below buttons and parameters.<br><br>
+Netflux automatically loads exampleNet. You can then run basic simulations using the below buttons and parameters.<br><br>
 <b>Time span: </b>specify the duration of the simulation.<br>
 <b>Simulate: </b>click to run a simulation with the current parameters.<br>
 <b>Plot: </b>replot the simulation using only the specified species.<br>
