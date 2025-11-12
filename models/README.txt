@@ -11,11 +11,15 @@ Kraeutler2010_betaAdrenergic.xlsx
         adjusted => PP1 w = 1 to prevent auto-activation of PKAC
         adjusted => PP2A w = 1 to prevent auto-activation of TnI, RyR
 
-Zeigler2016_cardiac_fibroblast.xsx
-    loads correctly from Python and webapp, simulations look good
-    
 Ryall2012_cardiomyocyte_hypertrophy.xlsx
     loads correctly from Python and webapp, simulations look good  
+
+Zeigler2016_cardiac_fibroblast.xslx
+    loads correctly from Python and webapp, simulations look good
+
+Liu2021_macrophage.xlsx
+	not yet tested
+    
     
 Notes:
 If you want to run the "test" files here, copy xls2model, model2PythonODE into his folder. Or use relative or absolute imports.
