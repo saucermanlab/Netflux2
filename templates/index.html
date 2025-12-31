@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="max-age=3600, must-revalidate">
-    <title>Netflux2</title>
+    <title>Netflux</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; }
@@ -26,7 +26,7 @@
     <div class="navbar">
         <div class="menu" onclick="toggleMenu()">☰</div>
         <div class="menu-options" id="menu-options">
-            <a href="/library" onclick="toggleMenu();" target="__blank">Open Model Library</a>
+            <a href="/library" onclick="toggleMenu();"">Open Model Library</a>
             <a href="#" onclick="toggleMenu(); triggerFileInput();">Open Model from Excel</a>    
             <a href="#" onclick="toggleMenu(); downloadSimulation();">Download Simulation</a>
             <a href="#" onclick="toggleMenu(); downloadmodel();">Download as Python</a>
@@ -34,7 +34,7 @@
             <a href="/help" onclick="toggleMenu();" target="__blank">Help</a>
             <a href="/about" onclick="toggleMenu();" target="__blank">About</a>
         </div>
-        <div><b>Netflux2</b></div>
+        <div><b>Netflux</b></div>
     </div>
     <div class="container">
         <div class="column">
@@ -51,7 +51,6 @@
             <label id="status">Status: Loading</label>
         </div>
         <div class="column">
-            <!-- BUG: parameters load but can't yet be refreshed -->
             <h3>Species Parameters</h3>
             <label for="speciesList">Species:<br></label>
             <select id="speciesList" onchange="getSelectedSpeciesParams()">
