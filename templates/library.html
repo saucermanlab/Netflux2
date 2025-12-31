@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Netflux2 - Model Library</title>
+    <title>Netflux - Model Library</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="{{ url_for('static', filename='index.js') }}"></script> <!- code for openmodel is in static/index.js ->
@@ -24,11 +24,11 @@
     <div class="navbar">
         <div class="menu" onclick="toggleMenu()">☰</div>
         <div class="menu-options" id="menu-options">
-            <a href="/">Netflux2</a>
+            <a href="/">Netflux</a>
             <a href="/help">Help</a>
             <a href="/about">About</a>
         </div>
-        <div><b>Netflux2</b></div>
+        <div><b>Netflux</b></div>
     </div>
         <h2>Model Library</h2>
 
@@ -115,6 +115,10 @@
                 success: function(response) {
                     console.log("sendSelectedModel: ", response.status); 
                     document.getElementById("status").innerText = response.status;
+                    
+                    // Redirect to the "/" Netflux webpage
+                    window.location.href = "/";
+                    
                 },
                 error: function(error) {
                     document.getElementById("status").innerText = error;

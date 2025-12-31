@@ -1,13 +1,14 @@
 Netflux (v2) development notes
-Updated 3/30/2025, version: alpha2
+Updated 7/9/2025, version: alpha3
 by Jeff Saucerman
 
+version alpha3: automatic redirect back to Netflux, install openpyxl needed for pandas
 version alpha2: export models in Python or XGMML formats, simulation CSV, error handling, documentation
 version alpha1: functional webapp, loads models, runs simulations, runs on 
     PythonAnywhere at netflux.pythonanywhere.com
 
 Netflux (v2) requires installation of:
-flask, flask-session >=0.6, numpy, matplotlib, scipy
+flask, flask-session >=0.6, numpy, matplotlib, scipy, openpyxl (for pandas)
 Install flask-session with: conda install conda-forge::flask-session to get v0.6
 or pip3 install Flask-sesssion to get 0.8
 
@@ -82,10 +83,11 @@ Inhibition '!' is used only for reactants.
 If there are no reactions going to a species, we put a 0.
 
 To do:
-Support missing input reactions to a species
+Support missing input reactions to a species (done?)
 Cleanup- clear uploads directory at start, clear flask session data
 Error handling
-more bug testing with model library, loading additional models
+more bug testing with model library (pretty well done?), loading additional models
+Add network export for compatibility with https://web.cytoscape.org/. Generate an edge table from the xgmmml
 
 Planned features:
 Update XGMML if given a previous one (from code, not in GUI)

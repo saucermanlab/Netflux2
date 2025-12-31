@@ -1,0 +1,10 @@
+12/31/2025 (closed by JS, but not yet confirmed)
+opening Netflux in research\Netflux2\
+File "c:\users\jjs3g\onedrive - university of virginia\documents\research\netflux2\webapp.py", line 259, in resetparams
+    speciesIDs = mymodel.speciesIDs.tolist()
+                 ^^^^^^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'speciesIDs'
+127.0.0.1 - - [31/Dec/2025 13:07:58] "POST /resetparams HTTP/1.1" 500 -
+DEBUG/openmodel: ImportError: Missing optional dependency 'openpyxl'.  Use pip or conda to install openpyxl.
+
+This was fixed by installing openpyxyl. This is apparently a new prereq for pandas use of Excel.

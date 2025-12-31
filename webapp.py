@@ -1,14 +1,11 @@
 # webapp.py: Netflux (v2) web app
 # Jeff Saucerman 3/2025
-# Last updated 3/29/2025 JS: functional with exampleNet
-# Requires: flask, flask-session >=0.6, numpy, matplotlib, scipy, lorenz
+# Last updated 12/31/2025 JS: opening a model automatically redirects back to Netflux
+# Requires: flask, flask-session >=0.6, numpy, matplotlib, scipy, openpyxl
+# For flask-session 0.6: conda install conda-forge::flask-session
 # To run webapp.py in Spyder, just hit run, then open http:/127.0.0.1:5000
 #
-# Current issues:
-# Some bugs with status field, parameter updates.
-#
-# To do:
-# Need to test with more models and conditions.
+# For issues, to do, bugs, etc. see README.txt.
 
 from flask import Flask, render_template, request, jsonify, session, g, send_from_directory
 from flask_session import Session # server-side sessions
