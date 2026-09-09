@@ -2,6 +2,8 @@ Netflux (v2) development notes
 Updated 7/9/2025, version: alpha3
 by Jeff Saucerman
 
+This project is licensed under the terms of the MIT license.
+
 version alpha3: automatic redirect back to Netflux, install openpyxl needed for pandas
 version alpha2: export models in Python or XGMML formats, simulation CSV, error handling, documentation
 version alpha1: functional webapp, loads models, runs simulations, runs on 
